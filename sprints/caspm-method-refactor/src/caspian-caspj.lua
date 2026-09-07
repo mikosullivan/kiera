@@ -557,7 +557,7 @@ end
 		"$$name": "{varobj = name} — the variable-object of `name`, not its value",
 		"$name":  "{var = name} — the variable's value",
 		"@name":  "{at = name} — an at-sigil field on the current object (sugar for %bucket[name]); norm expands the sugar",
-		"%name":  "{sys = name} — the system-method sigil"
+		"%name":  "{context = name} — the system-method sigil"
 	},
 	"note": "$$ is tried FIRST so it wins over $name against a `$$foo` input"
 }
@@ -585,7 +585,7 @@ local function consume_receiver(s)
 	--   Short: `%(url, kw: v)`  — bareword-less sigil-call, parens.
 	--   Long:  `%fetch(url, kw: v)` — sigil-with-name-called-as-if-callable.
 	-- Both produce `{fetch: {args, kw?}}`. Detected BEFORE the `%name` case
-	-- so `%fetch(` is consumed as fetch, not as a `{sys: fetch}` sys atom.
+	-- so `%fetch(` is consumed as fetch, not as a `{context: fetch}` context atom.
 	local fetch_after
 	if s:sub(1, 2) == "%(" then
 		fetch_after = 2
@@ -617,7 +617,7 @@ local function consume_receiver(s)
 	local p = s:match("^%%([%w_]+)")
 
 	if p then
-		return attach_line({sys = p}), s:sub(2 + #p)
+		return attach_line({context = p}), s:sub(2 + #p)
 	end
 
 	return nil, nil
@@ -811,7 +811,7 @@ end
 --[[
 {
 	"in":  "string — a Caspian expression",
-	"out": "expression-shape Lua table: {value = literal}, {var = name}, {sys = name}, {array = [...]}, {hash = [[k,v],...]}, a method-call list ([recv, method, {args=[...]}]), or an operator shape",
+	"out": "expression-shape Lua table: {value = literal}, {var = name}, {context = name}, {array = [...]}, {hash = [[k,v],...]}, a method-call list ([recv, method, {args=[...]}]), or an operator shape",
 	"raises": "when the expression shape isn't recognized; error message preserves 'cannot parse literal' for simple-literal failures"
 }
 ]]
@@ -1039,10 +1039,10 @@ parse_expression = function(s)
 		return attach_line({var = var_name})
 	end
 
-	local sys_name = s:match("^%%([%w_]+)$")
+	local context_name = s:match("^%%([%w_]+)$")
 
-	if sys_name then
-		return attach_line({sys = sys_name})
+	if context_name then
+		return attach_line({context = context_name})
 	end
 
 	-- Varobj atom: $$name is the variable-object (the meta-object representing
@@ -1373,7 +1373,7 @@ parse_expression = function(s)
 	end
 
 	-- Method call as expression: recv.method(args) — via consume_receiver so the
-	-- receiver can be a $var, a %sys, or a $$varobj.
+	-- receiver can be a $var, a %context, or a $$varobj.
 	local ec_recv, ec_after = consume_receiver(s)
 
 	if ec_recv then
@@ -1954,7 +1954,7 @@ desugar_pipe = function(lhs_atom, rhs_str, op)
 
 	if recv_sig then
 		local recv_atom = (recv_sig == "$") and {var = recv_name}
-			or {sys = recv_name}
+			or {context = recv_name}
 		local envelope = build_call_envelope(trim(recv_paren:sub(2, -2)), recv_meth, true)
 
 		return {op = op, left = lhs_atom,
@@ -1967,7 +1967,7 @@ desugar_pipe = function(lhs_atom, rhs_str, op)
 
 	if recv_sig2 then
 		local recv_atom2 = (recv_sig2 == "$") and {var = recv_name2}
-			or {sys = recv_name2}
+			or {context = recv_name2}
 		return {op = op, left = lhs_atom,
 			right = dot_atom(recv_atom2, recv_meth2)}
 	end
@@ -1992,7 +1992,7 @@ end
 		"$recv.method args / %recv...   -> [recv_expr, method, {args = [...]}]",
 		"$recv.method / %recv.method    -> [recv_expr, method]"
 	],
-	"note": "recv_expr is {var = name} for the $ sigil and {sys = name} for the % sigil"
+	"note": "recv_expr is {var = name} for the $ sigil and {context = name} for the % sigil"
 }
 ]]
 local function transpile_statement(stmt)
@@ -2122,7 +2122,7 @@ local function transpile_statement(stmt)
 		-- or `@field['k'] = v` — all key expressions come first, value last.
 		-- All go into one args list. A trailing `?` on the closing bracket
 		-- switches to the null-safe method name. Receiver sigil dispatches:
-		-- `$` → var atom, `%` → sys atom, `@` → at atom.
+		-- `$` → var atom, `%` → context atom, `@` → at atom.
 		local args_ast = {}
 		local key_trimmed = trim(idx_key)
 
@@ -2143,7 +2143,7 @@ local function transpile_statement(stmt)
 		if idx_sig == "$" then
 			recv = {var = idx_recv}
 		elseif idx_sig == "%" then
-			recv = {sys = idx_recv}
+			recv = {context = idx_recv}
 		else
 			recv = {at = idx_recv}
 		end
@@ -2426,7 +2426,7 @@ local function transpile_statement(stmt)
 			error("transpile: cannot parse subscript with empty key: " .. stmt)
 		end
 
-		local recv_expr = (sub_sig == "$") and {var = sub_recv} or {sys = sub_recv}
+		local recv_expr = (sub_sig == "$") and {var = sub_recv} or {context = sub_recv}
 		local args_ast = {}
 
 		for _, arg in ipairs(split_top_level(inner, ",")) do
@@ -2442,15 +2442,15 @@ local function transpile_statement(stmt)
 		return {recv_expr, method, {args = args_ast}}
 	end
 
-	-- Method-call receiver patterns accept both `$var` and `%sys` receivers via
+	-- Method-call receiver patterns accept both `$var` and `%context` receivers via
 	-- the [%$%%] character class. Dispatch on the captured sigil to build the
-	-- receiver expression ({var} vs {sys}). Kwargs / splats route through the
+	-- receiver expression ({var} vs {context}). Kwargs / splats route through the
 	-- shared parse_call_args helper via build_call_envelope.
 	local mc_sig, mc_recv, mc_method, mc_paren = stmt:match(
 		"^([%$%%])([%w_]+)%.([%w_]+%??)%s*(%b())$")
 
 	if mc_sig and mc_recv then
-		local recv_expr = (mc_sig == "$") and {var = mc_recv} or {sys = mc_recv}
+		local recv_expr = (mc_sig == "$") and {var = mc_recv} or {context = mc_recv}
 		local envelope = build_call_envelope(trim(mc_paren:sub(2, -2)), mc_method, true)
 
 		return {attach_line(dot_atom(recv_expr, mc_method, envelope))}
@@ -2462,7 +2462,7 @@ local function transpile_statement(stmt)
 		"^([%$%%])([%w_]+)%.%$([%w_]+)%s*(%b())$")
 
 	if sv_sig and sv_recv then
-		local recv_expr = (sv_sig == "$") and {var = sv_recv} or {sys = sv_recv}
+		local recv_expr = (sv_sig == "$") and {var = sv_recv} or {context = sv_recv}
 		local envelope = build_call_envelope(trim(sv_paren:sub(2, -2)), sv_var, true)
 
 		return {attach_line(dot_atom(recv_expr,
@@ -2473,7 +2473,7 @@ local function transpile_statement(stmt)
 		"^([%$%%])([%w_]+)%.([%w_]+%??)%s+(.-)$")
 
 	if mc2_sig and mc2_recv and mc2_tail and mc2_tail ~= "" then
-		local recv_expr = (mc2_sig == "$") and {var = mc2_recv} or {sys = mc2_recv}
+		local recv_expr = (mc2_sig == "$") and {var = mc2_recv} or {context = mc2_recv}
 		local envelope = build_call_envelope(trim(mc2_tail), mc2_method, false)
 
 		return {attach_line(dot_atom(recv_expr, mc2_method, envelope))}
@@ -2484,7 +2484,7 @@ local function transpile_statement(stmt)
 		"^([%$%%])([%w_]+)%.%$([%w_]+)%s+(.-)$")
 
 	if sv2_sig and sv2_recv and sv2_tail and sv2_tail ~= "" then
-		local recv_expr = (sv2_sig == "$") and {var = sv2_recv} or {sys = sv2_recv}
+		local recv_expr = (sv2_sig == "$") and {var = sv2_recv} or {context = sv2_recv}
 		local envelope = build_call_envelope(trim(sv2_tail), sv2_var, false)
 
 		return {attach_line(dot_atom(recv_expr,
@@ -3536,7 +3536,7 @@ local function read_signature(source, start_i, keyword_name)
 	elseif keyword_name == "method" and i <= len
 		and (source:sub(i, i) == "$" or source:sub(i, i) == "%") then
 		-- Singleton method: `method <receiver-expr>.name(...) ... end`. Receiver
-		-- is a variable / sys / dot-chain; name is the last dot-segment.
+		-- is a variable / context / dot-chain; name is the last dot-segment.
 		local sig_prefix = source:sub(i):match("^([%$%%][%w_]+[%w_%.]*)")
 
 		if not sig_prefix then

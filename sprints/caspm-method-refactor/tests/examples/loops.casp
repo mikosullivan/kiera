@@ -53,9 +53,7 @@ end
 	{
 		"primitive": 10,
 		"fn": "times",
-		"blocks": [
-			[]
-		]
+		"blocks": [[]]
 	}
 ]
 #--------------------------------------------------------------------
@@ -107,7 +105,14 @@ end
 		"primitive": 10,
 		"fn": "times",
 		"blocks": [
-			{"frame": true, "fn": "closure", "params": {"i": {}}, "body": []}
+			{
+				"frame": true,
+				"fn": "closure",
+				"params": {
+					"i": {}
+				},
+				"body": []
+			}
 		]
 	}
 ]
@@ -131,7 +136,7 @@ while &foo while &bar end end
 [
 	[
 		"scope",
-		"while_end",
+		"while",
 		[
 			{
 				"amp": "foo",
@@ -142,7 +147,7 @@ while &foo while &bar end end
 			"body": [
 				[
 					"scope",
-					"while_end",
+					"while",
 					[
 						{
 							"amp": "bar",
@@ -169,17 +174,13 @@ while &foo while &bar end end
 [
 	{
 		"frame": true,
-		"fn": "while_end",
-		"condition": [
-			{"var": "foo", "fn": "call", "syn": true}
-		],
+		"fn": "while",
+		"condition": [{"var": "foo", "fn": "call"}],
 		"body": [
 			{
 				"frame": true,
-				"fn": "while_end",
-				"condition": [
-					{"var": "bar", "fn": "call", "syn": true}
-				],
+				"fn": "while",
+				"condition": [{"var": "bar", "fn": "call"}],
 				"body": []
 			}
 		]
@@ -204,7 +205,7 @@ while &foo begin while &bar end
 [
 	[
 		"scope",
-		"while_end",
+		"while",
 		[
 			{
 				"amp": "foo",
@@ -242,17 +243,13 @@ while &foo begin while &bar end
 [
 	{
 		"frame": true,
-		"fn": "while_end",
-		"condition": [
-			{"var": "foo", "fn": "call", "syn": true}
-		],
+		"fn": "while",
+		"condition": [{"var": "foo", "fn": "call"}],
 		"body": [
 			{
 				"frame": true,
 				"fn": "begin_while",
-				"condition": [
-					{"var": "bar", "fn": "call", "syn": true}
-				],
+				"condition": [{"var": "bar", "fn": "call"}],
 				"body": []
 			}
 		]
@@ -277,7 +274,7 @@ while &foo == true begin while ! &bar end
 [
 	[
 		"scope",
-		"while_end",
+		"while",
 		{
 			"left": [
 				{
@@ -327,19 +324,21 @@ while &foo == true begin while ! &bar end
 [
 	{
 		"frame": true,
-		"fn": "while_end",
+		"fn": "while",
 		"condition": [
-			{"var": "foo", "fn": "call", "syn": true},
-			{"rv": true, "fn": "==", "args": [{"primitive": true}]}
+			{"var": "foo", "fn": "call"},
+			{
+				"rv": true,
+				"fn": "==",
+				"syn": true,
+				"args": [[{"primitive": true}]]
+			}
 		],
 		"body": [
 			{
 				"frame": true,
 				"fn": "begin_while",
-				"condition": [
-					{"var": "bar", "fn": "call", "syn": true},
-					{"rv": true, "fn": "!"}
-				],
+				"condition": [{"var": "bar", "fn": "call"}, {"rv": true, "fn": "not", "syn": true}],
 				"body": []
 			}
 		]
@@ -362,7 +361,7 @@ while &foo == true begin while ! &bar end
 #   Shapes (all use the same clause-dict — body/before/between/after/noloop —
 #   with all five keys always present, empty array when no statements):
 #
-#     while COND ... end        -> ["scope", "while_end",   COND, clauses]
+#     while COND ... end        -> ["scope", "while",   COND, clauses]
 #     until COND ... end        -> ["scope", "until_end",   COND, clauses]
 #     begin ... while COND      -> ["scope", "begin_while", COND, clauses]
 #     begin ... until COND      -> ["scope", "begin_until", COND, clauses]
@@ -399,7 +398,7 @@ end
 [
 	[
 		"scope",
-		"while_end",
+		"while",
 		{
 			"left": {
 				"line": 3,
@@ -440,17 +439,27 @@ end
 [
 	{
 		"frame": true,
-		"fn": "while_end",
+		"fn": "while",
 		"condition": [
-			{"var": "x", "fn": "<", "args": [{"primitive": 10}]}
+			{
+				"var": "x",
+				"fn": "<",
+				"syn": true,
+				"args": [[{"primitive": 10}]]
+			}
 		],
 		"body": [
-			{"var": "x", "fn": "+", "args": [{"primitive": 1}]},
+			{
+				"var": "x",
+				"fn": "+",
+				"syn": true,
+				"args": [[{"primitive": 1}]]
+			},
 			{
 				"frame": true,
 				"fn": "=",
 				"syn": true,
-				"args": ["x", {"rv": true}]
+				"args": ["x", [{"rv": true}]]
 			}
 		]
 	}
@@ -503,12 +512,8 @@ end
 	{
 		"frame": true,
 		"fn": "until",
-		"condition": [
-			{"var": "ready"}
-		],
-		"body": [
-			{"var": "poll", "fn": "call", "syn": true}
-		]
+		"condition": [{"var": "ready"}],
+		"body": [{"var": "poll", "fn": "call"}]
 	}
 ]
 #--------------------------------------------------------------------
@@ -585,7 +590,7 @@ end
 [
 	[
 		"scope",
-		"while_end",
+		"while",
 		[
 			{
 				"amp": "bar",
@@ -649,27 +654,35 @@ end
 [
 	{
 		"frame": true,
-		"fn": "while_end",
-		"condition": [
-			{"var": "bar", "fn": "call", "syn": true}
-		],
+		"fn": "while",
+		"condition": [{"var": "bar", "fn": "call"}],
 		"body": [
 			{
 				"frame": true,
 				"fn": "begin_while",
 				"as": "retry_loop",
 				"condition": [
-					{"var": "attempt", "fn": "<", "args": [{"primitive": 5}]}
+					{
+						"var": "attempt",
+						"fn": "<",
+						"syn": true,
+						"args": [[{"primitive": 5}]]
+					}
 				],
 				"body": [
-					{"var": "attempt", "fn": "+", "args": [{"primitive": 1}]},
+					{
+						"var": "attempt",
+						"fn": "+",
+						"syn": true,
+						"args": [[{"primitive": 1}]]
+					},
 					{
 						"frame": true,
 						"fn": "=",
 						"syn": true,
-						"args": ["attempt", {"rv": true}]
+						"args": ["attempt", [{"rv": true}]]
 					},
-					{"var": "try_connect", "fn": "call", "syn": true}
+					{"var": "try_connect", "fn": "call"}
 				]
 			}
 		]
@@ -742,9 +755,15 @@ end
 			{
 				"frame": true,
 				"fn": "closure",
-				"params": {"item": {}},
+				"params": {
+					"item": {}
+				},
 				"body": [
-					{"var": "handle", "fn": "call", "syn": true, "args": [{"var": "item"}]}
+					{
+						"var": "handle",
+						"fn": "call",
+						"args": [[{"var": "item"}]]
+					}
 				]
 			}
 		]
@@ -839,13 +858,29 @@ end
 			{
 				"frame": true,
 				"fn": "closure",
-				"params": {"item": {}},
+				"params": {
+					"item": {}
+				},
 				"as": "loop",
 				"body": [
 					{"var": "loop", "fn": "count"},
-					{"rv": true, "fn": "+", "args": [{"primitive": ": "}]},
-					{"rv": true, "fn": "+", "args": [{"var": "item"}]},
-					{"var": "emit", "fn": "call", "syn": true, "args": [{"rv": true}]}
+					{
+						"rv": true,
+						"fn": "+",
+						"syn": true,
+						"args": [[{"primitive": ": "}]]
+					},
+					{
+						"rv": true,
+						"fn": "+",
+						"syn": true,
+						"args": [[{"var": "item"}]]
+					},
+					{
+						"var": "emit",
+						"fn": "call",
+						"args": [[{"rv": true}]]
+					}
 				]
 			}
 		]
@@ -872,7 +907,7 @@ end
 [
 	[
 		"scope",
-		"while_end",
+		"while",
 		{
 			"left": {
 				"line": 3,
@@ -914,18 +949,28 @@ end
 [
 	{
 		"frame": true,
-		"fn": "while_end",
+		"fn": "while",
 		"as": "loop",
 		"condition": [
-			{"var": "x", "fn": "<", "args": [{"primitive": 20}]}
+			{
+				"var": "x",
+				"fn": "<",
+				"syn": true,
+				"args": [[{"primitive": 20}]]
+			}
 		],
 		"body": [
-			{"var": "x", "fn": "+", "args": [{"primitive": 1}]},
+			{
+				"var": "x",
+				"fn": "+",
+				"syn": true,
+				"args": [[{"primitive": 1}]]
+			},
 			{
 				"frame": true,
 				"fn": "=",
 				"syn": true,
-				"args": ["x", {"rv": true}]
+				"args": ["x", [{"rv": true}]]
 			}
 		]
 	}
@@ -1075,7 +1120,9 @@ end
 			{
 				"frame": true,
 				"fn": "closure",
-				"params": {"person": {}},
+				"params": {
+					"person": {}
+				},
 				"as": "person_loop",
 				"body": [
 					{"var": "person", "fn": "addresses"},
@@ -1086,7 +1133,9 @@ end
 							{
 								"frame": true,
 								"fn": "closure",
-								"params": {"address": {}},
+								"params": {
+									"address": {}
+								},
 								"body": [
 									{
 										"frame": true,
@@ -1094,10 +1143,17 @@ end
 										"branches": [
 											{
 												"condition": [
-													{"var": "address", "fn": "matches", "args": [{"var": "target"}]}
+													{
+														"var": "address",
+														"fn": "matches",
+														"args": [[{"var": "target"}]]
+													}
 												],
 												"body": [
-													{"frame": true, "fn": "break", "args": [{"primitive": 2}]}
+													{
+														"bwc": "break",
+														"args": [[{"primitive": 2}]]
+													}
 												]
 											}
 										]

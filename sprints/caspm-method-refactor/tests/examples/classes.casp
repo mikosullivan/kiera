@@ -1,0 +1,6863 @@
+#!/usr/bin/caspian
+
+vibecode <<EOF
+{
+	"doc":    "test_cases_parsing_classes",
+	"role":   "sibling of parse.casp holding transpiler fixtures whose primary subject is class-related constructs: class definitions (bare, with body, with methods), amend (bare-target and parenthesized-target), instance construction (bare, with args, with body), singleton methods attached to specific objects. Split out to keep parse.casp focused on other syntactic surfaces; same fixture format (boxed by `#===...` outer borders, sections `#--- code ---` / `#--- CaspJ ---` / `#--- CaspM ---` or `#--- CaspM refactor ---`), read by the same parse-extract module.",
+	"status": "growing; the top-level `method &name(...) end` fixtures currently in parse.casp's Functions section could migrate here if the class-related organizing principle wins over the callable-definition principle"
+}
+EOF
+
+#====================================================================
+# Classes
+#====================================================================
+
+
+#====================================================================
+# name: empty class as setvar RHS [ghi]
+#
+
+#--- code -----------------------------------------------------------
+$empty_cls = class
+end
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		"scope",
+		"setvar",
+		"empty_cls",
+		{
+			"class": {
+				"body": []
+			}
+		},
+		{
+			"line": 2
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM refactor --------------------------------------------------
+[
+	{
+		"frame": true,
+		"fn": "class",
+		"body": []
+	},
+	{
+		"frame": true,
+		"fn": "=",
+		"syn": true,
+		"args": ["empty_cls", [{"rv": true}]]
+	}
+]
+#--------------------------------------------------------------------
+
+#
+# name: empty class as setvar RHS
+#====================================================================
+
+#====================================================================
+# name: bare class with a single method (value discarded) [ghi]
+# Anonymous class at statement position — no setvar wrapping, value discarded.
+#
+
+#--- code -----------------------------------------------------------
+class
+	method &hello()
+		return 'hi'
+	end
+end
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		{
+			"class": {
+				"body": [
+					[
+						{
+							"line": 4,
+							"method": {
+								"body": [
+									[
+										"scope",
+										"return",
+										{
+											"line": 3,
+											"value": "hi"
+										},
+										{
+											"line": 3
+										}
+									]
+								],
+								"name": "hello",
+								"params": []
+							}
+						}
+					]
+				]
+			},
+			"line": 5
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM refactor --------------------------------------------------
+[
+	{
+		"frame": true,
+		"fn": "class",
+		"body": [
+			{
+				"class": true,
+				"fn": "method",
+				"name": "hello",
+				"params": {},
+				"body": [
+					{"bwc": "return", "args": [[{"primitive": "hi"}]]}
+				]
+			}
+		]
+	}
+]
+#--------------------------------------------------------------------
+
+#
+# name: bare class with a single method (value discarded)
+#====================================================================
+
+
+
+#====================================================================
+# name: class with a single method in its body [ghi]
+#
+
+#--- code -----------------------------------------------------------
+$widget = class
+	method &hello()
+		return 'hi'
+	end
+end
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		"scope",
+		"setvar",
+		"widget",
+		{
+			"class": {
+				"body": [
+					[
+						{
+							"line": 4,
+							"method": {
+								"body": [
+									[
+										"scope",
+										"return",
+										{
+											"line": 3,
+											"value": "hi"
+										},
+										{
+											"line": 3
+										}
+									]
+								],
+								"name": "hello",
+								"params": []
+							}
+						}
+					]
+				]
+			}
+		},
+		{
+			"line": 5
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM refactor --------------------------------------------------
+[
+	{
+		"frame": true,
+		"fn": "class",
+		"body": [
+			{
+				"class": true,
+				"fn": "method",
+				"name": "hello",
+				"params": {},
+				"body": [
+					{"bwc": "return", "args": [[{"primitive": "hi"}]]}
+				]
+			}
+		]
+	},
+	{
+		"frame": true,
+		"fn": "=",
+		"syn": true,
+		"args": ["widget", [{"rv": true}]]
+	}
+]
+#--------------------------------------------------------------------
+
+#
+# name: class with a single method in its body
+#====================================================================
+
+
+#====================================================================
+# name: amend as a standalone statement (bare target) [ghi]
+#
+
+#--- code -----------------------------------------------------------
+amend $character
+	method &farewell()
+		return 'farewell, ' + @name
+	end
+end
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		{
+			"amend": {
+				"body": [
+					[
+						{
+							"line": 4,
+							"method": {
+								"body": [
+									[
+										"scope",
+										"return",
+										{
+											"left": {
+												"line": 3,
+												"value": "farewell, "
+											},
+											"line": 3,
+											"op": "+",
+											"right": {
+												"at": "name",
+												"line": 3
+											}
+										},
+										{
+											"line": 3
+										}
+									]
+								],
+								"name": "farewell",
+								"params": []
+							}
+						}
+					]
+				],
+				"target": {
+					"line": 1,
+					"var": "character"
+				}
+			},
+			"line": 5
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM refactor --------------------------------------------------
+[
+	{
+		"frame": true,
+		"fn": "amend",
+		"args": [[{"var": "character"}]],
+		"body": [
+			{
+				"class": true,
+				"fn": "method",
+				"name": "farewell",
+				"params": {},
+				"body": [
+					{
+						"bwc": "return",
+						"args": [
+							[
+								{
+									"primitive": "farewell, ",
+									"fn": "+",
+									"syn": true,
+									"args": [[
+										{"bucket": true, "fn": "[]", "syn": true, "args": [[{"primitive": "name"}]]}
+									]]
+								}
+							]
+						]
+					}
+				]
+			}
+		]
+	}
+]
+#--------------------------------------------------------------------
+
+#
+# name: amend as a standalone statement (bare target)
+#====================================================================
+
+
+#====================================================================
+# name: amend as a standalone statement (parenthesized target) [ghi]
+# same CaspJ / CaspM as the bare-target form — parens are cosmetic
+#
+
+#--- code -----------------------------------------------------------
+amend($character)
+	method &farewell()
+		return 'farewell, ' + @name
+	end
+end
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		{
+			"amend": {
+				"body": [
+					[
+						{
+							"line": 4,
+							"method": {
+								"body": [
+									[
+										"scope",
+										"return",
+										{
+											"left": {
+												"line": 3,
+												"value": "farewell, "
+											},
+											"line": 3,
+											"op": "+",
+											"right": {
+												"at": "name",
+												"line": 3
+											}
+										},
+										{
+											"line": 3
+										}
+									]
+								],
+								"name": "farewell",
+								"params": []
+							}
+						}
+					]
+				],
+				"target": {
+					"line": 1,
+					"var": "character"
+				}
+			},
+			"line": 5
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM refactor --------------------------------------------------
+[
+	{
+		"frame": true,
+		"fn": "amend",
+		"args": [[{"var": "character"}]],
+		"body": [
+			{
+				"class": true,
+				"fn": "method",
+				"name": "farewell",
+				"params": {},
+				"body": [
+					{
+						"bwc": "return",
+						"args": [
+							[
+								{
+									"primitive": "farewell, ",
+									"fn": "+",
+									"syn": true,
+									"args": [[
+										{"bucket": true, "fn": "[]", "syn": true, "args": [[{"primitive": "name"}]]}
+									]]
+								}
+							]
+						]
+					}
+				]
+			}
+		]
+	}
+]
+#--------------------------------------------------------------------
+
+#
+# name: amend as a standalone statement (parenthesized target)
+#====================================================================
+
+
+#====================================================================
+# name: empty amend body [ghi]
+#
+
+#--- code -----------------------------------------------------------
+amend $character end
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		{
+			"amend": {
+				"body": [],
+				"target": {
+					"line": 1,
+					"var": "character"
+				}
+			},
+			"line": 1
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM refactor --------------------------------------------------
+[
+	{
+		"frame": true,
+		"fn": "amend",
+		"args": [[{"var": "character"}]],
+		"body": []
+	}
+]
+#--------------------------------------------------------------------
+
+#
+# name: empty amend body
+#====================================================================
+
+
+# design decisions for Section 15 (classes) per Miko clarification:
+#
+#   `class` and `amend` are ordinary block constructs — indent-insensitive and
+#   newline-agnostic like the other block BWCs; they can be written across many
+#   lines or on one line. Not "multi-line required".
+#
+#   Class value (LONG FORM ONLY — no `class &name` sugar):
+#     $foo = class ... end
+#       -> ["scope", "setvar", <name>, {class: {body: [...]}}]
+#
+#   `amend` uses the SAME syntax as `class` — a block construct with a body:
+#     $foo = amend $target ... end
+#       -> ["scope", "setvar", <name>, {amend: {target: <expr>, body: [...]}}]
+#   Or as a statement (probably the more common form):
+#     amend $target ... end
+#       -> [{amend: {target: <expr>, body: [...]}}]
+#   `amend` mutates the target class rather than defining a new one.
+#
+#   Class-body DSL commands (`field`, `inherits`, `abstract`, plus any DSL a
+#   user extends with) transpile as ordinary BWC calls:
+#     [{bwc: <name>}, arg, arg, ..., {kw: [[k, v], ...]}]
+#   These are BWCs in the proper sense — sigil-less command words — so the
+#   `{bwc: name}` atom is honest here (distinct from `{amp: name}` for `&name`
+#   sigiled calls).
+#
+#   There is NO `getter` command; the survey material's `getter :tag, 'default'`
+#   is stale and should be removed when this section lands tests.
+#
+#   `method &name(...) ... end` inside a class body uses the value-atom shape
+#   from Section 11:
+#     [{method: {name, params, body}}]
+#   Standalone at class-body position, the runtime attaches it to the class.
+#   Method names may be written with OR without the `&` sigil — both are
+#   equivalent:
+#     method &to_string() ... end
+#     method  to_string() ... end
+#   Both produce `{method: {name: "to_string", ...}}`. `function` and `closure`
+#   still require the `&` sigil on their names.
+#
+#   `private`, `main`, `autorun` are FUNCTION CALLS (per Miko), not modifiers.
+#   Each is called with the method value as its arg and returns the modified
+#   method value. Composition is right-to-left (innermost call first):
+#     autorun private method &helper() ... end
+#     -> [{bwc: "autorun"},
+#          [{bwc: "private"},
+#            {method: {name: "helper", params: [], body: [...]}}]]
+#   Equivalent explicit paren form:
+#     autorun(private(method &helper() ... end))
+#   Parser support for these BWC-call chains is deferred — needs the parser
+#   to recognize the identifier-BWCs at statement start and consume the
+#   following construct(s) as their args.
+#
+#   Class-field references — `@name` transpiles as a sigil-family atom
+#   `{at: name}`. As a use-site reference:
+#     @name           -> {at: "name"}
+#     @name = 'foo'   -> ["scope", "setat", "name", {value: "foo"}]  (proposed)
+#     puts @name      -> [{bwc: "puts"}, {at: "name"}]                (proposed)
+#   `@name` in method-param position (`method &init(@name, @rank)`) is
+#   Ruby-style auto-assignment — settled and desugared at CaspianJ level.
+#   Each `@name` param strips its `@` and becomes a `{name: "name"}` param
+#   entry; the method body gets an `["scope", "setat", name, {var: name}]`
+#   statement prepended per @-param, in source order. Runtime doesn't need
+#   to know about the sigil — the body already contains the assignments.
+#   Three source forms: bare `@name`, rich metadata `@name: {default: 5}`,
+#   and default-shortcut `@name: value` (maps to `{default: value}` meta).
+#   Fixtures in Section 6 near the `@name` expression atom.
+
+#====================================================================
+# name: composite [ghi]
+# a whole class body integrating inherits, abstract, fields (:sym + 'string' name), init with @-auto-assign, methods (plain / private / autorun+private / pipe-modified / long-form / bareword-BWC / method with subscript-set and sys-method call), inline-label comment, and a %bucket setter
+#
+
+#--- code -----------------------------------------------------------
+$character = class # character
+	inherits %('foo.bar/person.casp'), %('foo.bar/serialize.casp')
+	abstract true
+
+	field :serial, class: :string, default: '', getset: true
+	field 'serial', class: :string, default: '', getset: true
+
+	method &init(@name, @rank)
+		return null
+	end
+
+	# set a field on the class itself
+	@foo = 'bar'
+
+	method &greet()
+		return @rank + ' ' + @name
+	end
+
+	private method &helper()
+		return @rank
+	end
+
+	autorun(private(method &sender()
+		return @rank
+	end))
+
+	method &whatever()
+		return @rank
+	end
+
+	| autorun
+	| main
+
+	$to_str = method to_string()
+		return @rank + ' ' + @name
+	end
+
+	main $to_str
+
+	method on_close()
+		%bucket['foo'] = &baz
+		%self.emit @name + ' exits.'
+	end
+end
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		"scope",
+		"setvar",
+		"character",
+		{
+			"class": {
+				"body": [
+					{
+						"comment": "character",
+						"line": 1
+					},
+					[
+						{
+							"bwc": "inherits"
+						},
+						{
+							"fetch": {
+								"args": [
+									{
+										"line": 2,
+										"value": "foo.bar/person.casp"
+									}
+								]
+							},
+							"line": 2
+						},
+						{
+							"fetch": {
+								"args": [
+									{
+										"line": 2,
+										"value": "foo.bar/serialize.casp"
+									}
+								]
+							},
+							"line": 2
+						},
+						{
+							"line": 2
+						}
+					],
+					[
+						{
+							"bwc": "abstract"
+						},
+						{
+							"line": 3,
+							"value": true
+						},
+						{
+							"line": 3
+						}
+					],
+					[
+						{
+							"bwc": "field"
+						},
+						{
+							"line": 5,
+							"value": "serial"
+						},
+						{
+							"kw": [
+								[
+									"class",
+									{
+										"line": 5,
+										"value": "string"
+									}
+								],
+								[
+									"default",
+									{
+										"line": 5,
+										"value": ""
+									}
+								],
+								[
+									"getset",
+									{
+										"line": 5,
+										"value": true
+									}
+								]
+							]
+						},
+						{
+							"line": 5
+						}
+					],
+					[
+						{
+							"bwc": "field"
+						},
+						{
+							"line": 6,
+							"value": "serial"
+						},
+						{
+							"kw": [
+								[
+									"class",
+									{
+										"line": 6,
+										"value": "string"
+									}
+								],
+								[
+									"default",
+									{
+										"line": 6,
+										"value": ""
+									}
+								],
+								[
+									"getset",
+									{
+										"line": 6,
+										"value": true
+									}
+								]
+							]
+						},
+						{
+							"line": 6
+						}
+					],
+					[
+						{
+							"line": 10,
+							"method": {
+								"body": [
+									[
+										"scope",
+										"setat",
+										"name",
+										{
+											"var": "name"
+										}
+									],
+									[
+										"scope",
+										"setat",
+										"rank",
+										{
+											"var": "rank"
+										}
+									],
+									[
+										"scope",
+										"return",
+										{
+											"line": 9,
+											"value": null
+										},
+										{
+											"line": 9
+										}
+									]
+								],
+								"name": "init",
+								"params": [
+									{
+										"name": "name"
+									},
+									{
+										"name": "rank"
+									}
+								]
+							}
+						}
+					],
+					{
+						"comment": "set a field on the class itself",
+						"line": 12
+					},
+					[
+						"scope",
+						"setat",
+						"foo",
+						{
+							"line": 13,
+							"value": "bar"
+						},
+						{
+							"line": 13
+						}
+					],
+					[
+						{
+							"line": 17,
+							"method": {
+								"body": [
+									[
+										"scope",
+										"return",
+										{
+											"left": {
+												"at": "rank",
+												"line": 16
+											},
+											"line": 16,
+											"op": "+",
+											"right": {
+												"left": {
+													"line": 16,
+													"value": " "
+												},
+												"line": 16,
+												"op": "+",
+												"right": {
+													"at": "name",
+													"line": 16
+												}
+											}
+										},
+										{
+											"line": 16
+										}
+									]
+								],
+								"name": "greet",
+								"params": []
+							}
+						}
+					],
+					[
+						{
+							"bwc": "private",
+							"line": 19
+						}
+					],
+					[
+						{
+							"line": 21,
+							"method": {
+								"body": [
+									[
+										"scope",
+										"return",
+										{
+											"at": "rank",
+											"line": 20
+										},
+										{
+											"line": 20
+										}
+									]
+								],
+								"name": "helper",
+								"params": []
+							}
+						}
+					],
+					[
+						{
+							"bwc": "autorun"
+						},
+						[
+							{
+								"bwc": "private"
+							},
+							{
+								"line": 3,
+								"method": {
+									"body": [
+										[
+											"scope",
+											"return",
+											{
+												"at": "rank",
+												"line": 2
+											},
+											{
+												"line": 2
+											}
+										]
+									],
+									"name": "sender",
+									"params": []
+								}
+							}
+						],
+						{
+							"line": 3
+						}
+					],
+					[
+						{
+							"left": {
+								"left": {
+									"line": 29,
+									"method": {
+										"body": [
+											[
+												"scope",
+												"return",
+												{
+													"at": "rank",
+													"line": 28
+												},
+												{
+													"line": 28
+												}
+											]
+										],
+										"name": "whatever",
+										"params": []
+									}
+								},
+								"line": 31,
+								"op": "|",
+								"right": [
+									{
+										"bwc": "autorun",
+										"line": 31
+									}
+								]
+							},
+							"line": 32,
+							"op": "|",
+							"right": [
+								{
+									"bwc": "main",
+									"line": 32
+								}
+							]
+						}
+					],
+					[
+						"scope",
+						"setvar",
+						"to_str",
+						{
+							"method": {
+								"body": [
+									[
+										"scope",
+										"return",
+										{
+											"left": {
+												"at": "rank",
+												"line": 35
+											},
+											"line": 35,
+											"op": "+",
+											"right": {
+												"left": {
+													"line": 35,
+													"value": " "
+												},
+												"line": 35,
+												"op": "+",
+												"right": {
+													"at": "name",
+													"line": 35
+												}
+											}
+										},
+										{
+											"line": 35
+										}
+									]
+								],
+								"name": "to_string",
+								"params": []
+							}
+						},
+						{
+							"line": 36
+						}
+					],
+					[
+						{
+							"bwc": "main"
+						},
+						{
+							"line": 38,
+							"var": "to_str"
+						},
+						{
+							"line": 38
+						}
+					],
+					[
+						{
+							"line": 43,
+							"method": {
+								"body": [
+									[
+										{
+											"context": "bucket"
+										},
+										"[]=",
+										{
+											"args": [
+												{
+													"line": 41,
+													"value": "foo"
+												},
+												[
+													{
+														"amp": "baz",
+														"line": 41
+													}
+												]
+											]
+										},
+										{
+											"line": 41
+										}
+									],
+									[
+										{
+											"args": [
+												{
+													"left": {
+														"at": "name",
+														"line": 42
+													},
+													"line": 42,
+													"op": "+",
+													"right": {
+														"line": 42,
+														"value": " exits."
+													}
+												}
+											],
+											"left": {
+												"context": "self"
+											},
+											"line": 42,
+											"op": ".",
+											"right": "emit"
+										}
+									]
+								],
+								"name": "on_close",
+								"params": []
+							}
+						}
+					]
+				]
+			}
+		},
+		{
+			"line": 44
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM -----------------------------------------------------------
+[
+	[
+		{
+			"cmd": "="
+		},
+		"character",
+		{
+			"class": {
+				"bd": [
+					[
+						{
+							"bwc": "inherits"
+						},
+						{
+							"ft": {
+								"a": [
+									{
+										"v": "foo.bar/person.casp"
+									}
+								]
+							}
+						},
+						{
+							"ft": {
+								"a": [
+									{
+										"v": "foo.bar/serialize.casp"
+									}
+								]
+							}
+						}
+					],
+					[
+						{
+							"bwc": "abstract"
+						},
+						{
+							"v": true
+						}
+					],
+					[
+						{
+							"bwc": "field"
+						},
+						{
+							"v": "serial"
+						},
+						{
+							"kw": [
+								[
+									"class",
+									{
+										"v": "string"
+									}
+								],
+								[
+									"default",
+									{
+										"v": ""
+									}
+								],
+								[
+									"getset",
+									{
+										"v": true
+									}
+								]
+							]
+						}
+					],
+					[
+						{
+							"bwc": "field"
+						},
+						{
+							"v": "serial"
+						},
+						{
+							"kw": [
+								[
+									"class",
+									{
+										"v": "string"
+									}
+								],
+								[
+									"default",
+									{
+										"v": ""
+									}
+								],
+								[
+									"getset",
+									{
+										"v": true
+									}
+								]
+							]
+						}
+					],
+					[
+						{
+							"method": {
+								"bd": [
+									[
+										{
+											"cmd": "mc"
+										},
+										{
+											"a": [
+												{
+													"v": "name"
+												},
+												{
+													"var": "name"
+												}
+											],
+											"fn": "[]=",
+											"rcvr": {
+												"context": "bucket"
+											}
+										}
+									],
+									[
+										{
+											"cmd": "mc"
+										},
+										{
+											"a": [
+												{
+													"v": "rank"
+												},
+												{
+													"var": "rank"
+												}
+											],
+											"fn": "[]=",
+											"rcvr": {
+												"context": "bucket"
+											}
+										}
+									],
+									[
+										"scope",
+										"return",
+										{
+											"v": null
+										}
+									]
+								],
+								"name": "init",
+								"pm": [
+									{
+										"name": "name"
+									},
+									{
+										"name": "rank"
+									}
+								]
+							}
+						}
+					],
+					[
+						{
+							"cmd": "mc"
+						},
+						{
+							"a": [
+								{
+									"v": "foo"
+								},
+								{
+									"v": "bar"
+								}
+							],
+							"fn": "[]=",
+							"rcvr": {
+								"context": "bucket"
+							}
+						}
+					],
+					[
+						{
+							"method": {
+								"bd": [
+									[
+										"scope",
+										"return",
+										[
+											{
+												"cmd": "mc"
+											},
+											{
+												"a": [
+													[
+														{
+															"cmd": "mc"
+														},
+														{
+															"a": [
+																[
+																	{
+																		"cmd": "mc"
+																	},
+																	{
+																		"a": [
+																			{
+																				"v": "name"
+																			}
+																		],
+																		"fn": "[]",
+																		"rcvr": {
+																			"context": "bucket"
+																		}
+																	}
+																]
+															],
+															"fn": "+",
+															"rcvr": {
+																"v": " "
+															}
+														}
+													]
+												],
+												"fn": "+",
+												"rcvr": [
+													{
+														"cmd": "mc"
+													},
+													{
+														"a": [
+															{
+																"v": "rank"
+															}
+														],
+														"fn": "[]",
+														"rcvr": {
+															"context": "bucket"
+														}
+													}
+												]
+											}
+										]
+									]
+								],
+								"name": "greet",
+								"pm": []
+							}
+						}
+					],
+					[
+						{
+							"bwc": "private"
+						}
+					],
+					[
+						{
+							"method": {
+								"bd": [
+									[
+										"scope",
+										"return",
+										[
+											{
+												"cmd": "mc"
+											},
+											{
+												"a": [
+													{
+														"v": "rank"
+													}
+												],
+												"fn": "[]",
+												"rcvr": {
+													"context": "bucket"
+												}
+											}
+										]
+									]
+								],
+								"name": "helper",
+								"pm": []
+							}
+						}
+					],
+					[
+						{
+							"bwc": "autorun"
+						},
+						[
+							{
+								"bwc": "private"
+							},
+							{
+								"method": {
+									"bd": [
+										[
+											"scope",
+											"return",
+											[
+												{
+													"cmd": "mc"
+												},
+												{
+													"a": [
+														{
+															"v": "rank"
+														}
+													],
+													"fn": "[]",
+													"rcvr": {
+														"context": "bucket"
+													}
+												}
+											]
+										]
+									],
+									"name": "sender",
+									"pm": []
+								}
+							}
+						],
+						{
+						}
+					],
+					[
+						[
+							{
+								"bwc": "main"
+							},
+							[
+								{
+									"bwc": "autorun"
+								},
+								{
+									"method": {
+										"bd": [
+											[
+												"scope",
+												"return",
+												[
+													{
+														"cmd": "mc"
+													},
+													{
+														"a": [
+															{
+																"v": "rank"
+															}
+														],
+														"fn": "[]",
+														"rcvr": {
+															"context": "bucket"
+														}
+													}
+												]
+											]
+										],
+										"name": "whatever",
+										"pm": []
+									}
+								}
+							]
+						]
+					],
+					[
+						{
+							"cmd": "="
+						},
+						"to_str",
+						{
+							"method": {
+								"bd": [
+									[
+										"scope",
+										"return",
+										[
+											{
+												"cmd": "mc"
+											},
+											{
+												"a": [
+													[
+														{
+															"cmd": "mc"
+														},
+														{
+															"a": [
+																[
+																	{
+																		"cmd": "mc"
+																	},
+																	{
+																		"a": [
+																			{
+																				"v": "name"
+																			}
+																		],
+																		"fn": "[]",
+																		"rcvr": {
+																			"context": "bucket"
+																		}
+																	}
+																]
+															],
+															"fn": "+",
+															"rcvr": {
+																"v": " "
+															}
+														}
+													]
+												],
+												"fn": "+",
+												"rcvr": [
+													{
+														"cmd": "mc"
+													},
+													{
+														"a": [
+															{
+																"v": "rank"
+															}
+														],
+														"fn": "[]",
+														"rcvr": {
+															"context": "bucket"
+														}
+													}
+												]
+											}
+										]
+									]
+								],
+								"name": "to_string",
+								"pm": []
+							}
+						},
+						{
+						}
+					],
+					[
+						{
+							"bwc": "main"
+						},
+						{
+							"var": "to_str"
+						}
+					],
+					[
+						{
+							"method": {
+								"bd": [
+									[
+										{
+											"cmd": "mc"
+										},
+										{
+											"a": [
+												{
+													"v": "foo"
+												},
+												[
+													{
+														"cmd": "mc"
+													},
+													{
+														"fn": "call",
+														"rcvr": {
+															"var": "baz"
+														}
+													}
+												]
+											],
+											"fn": "[]=",
+											"rcvr": {
+												"context": "bucket"
+											}
+										}
+									],
+									[
+										[
+											{
+												"cmd": "mc"
+											},
+											{
+												"a": [
+													[
+														{
+															"cmd": "mc"
+														},
+														{
+															"a": [
+																{
+																	"v": " exits."
+																}
+															],
+															"fn": "+",
+															"rcvr": [
+																{
+																	"cmd": "mc"
+																},
+																{
+																	"a": [
+																		{
+																			"v": "name"
+																		}
+																	],
+																	"fn": "[]",
+																	"rcvr": {
+																		"context": "bucket"
+																	}
+																}
+															]
+														}
+													]
+												],
+												"fn": "emit",
+												"rcvr": {
+													"context": "self"
+												}
+											}
+										]
+									]
+								],
+								"name": "on_close",
+								"pm": []
+							}
+						}
+					]
+				]
+			}
+		},
+		{
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#
+# name: composite
+# a whole class body integrating inherits, abstract, fields (:sym + 'string' name), init with @-auto-assign, methods (plain / private / autorun+private / pipe-modified / long-form / bareword-BWC / method with subscript-set and sys-method call), inline-label comment, and a %bucket setter
+#====================================================================
+
+
+# instantiation
+#====================================================================
+# name: .new() with quoted-string kwarg keys [ghi]
+# `'name': 'x'` and `"rank": 'y'` produce the same {kw} shape as bareword keys
+#
+
+#--- code -----------------------------------------------------------
+$captain = $character.new('name': 'picard', "rank": 'captain')
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		"scope",
+		"setvar",
+		"captain",
+		[
+			{
+				"line": 1,
+				"var": "character"
+			},
+			"new",
+			{
+				"args": [],
+				"kw": [
+					[
+						"name",
+						{
+							"line": 1,
+							"value": "picard"
+						}
+					],
+					[
+						"rank",
+						{
+							"line": 1,
+							"value": "captain"
+						}
+					]
+				],
+				"line": 1
+			}
+		],
+		{
+			"line": 1
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM -----------------------------------------------------------
+[
+	[
+		{
+			"cmd": "="
+		},
+		"captain",
+		[
+			{
+				"cmd": "mc"
+			},
+			{
+				"fn": "new",
+				"kw": [
+					[
+						"name",
+						{
+							"v": "picard"
+						}
+					],
+					[
+						"rank",
+						{
+							"v": "captain"
+						}
+					]
+				],
+				"rcvr": {
+					"var": "character"
+				}
+			}
+		]
+	]
+]
+#--------------------------------------------------------------------
+
+#
+# name: .new() with quoted-string kwarg keys
+#====================================================================
+
+# singleton method — method attached to one specific object
+#====================================================================
+# name: .new() with keyword arguments [ghi]
+#
+
+#--- code -----------------------------------------------------------
+$picard = $character.new(name: 'picard', rank: 'captain')
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		"scope",
+		"setvar",
+		"picard",
+		[
+			{
+				"line": 1,
+				"var": "character"
+			},
+			"new",
+			{
+				"args": [],
+				"kw": [
+					[
+						"name",
+						{
+							"line": 1,
+							"value": "picard"
+						}
+					],
+					[
+						"rank",
+						{
+							"line": 1,
+							"value": "captain"
+						}
+					]
+				],
+				"line": 1
+			}
+		],
+		{
+			"line": 1
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM -----------------------------------------------------------
+[
+	[
+		{
+			"cmd": "="
+		},
+		"picard",
+		[
+			{
+				"cmd": "mc"
+			},
+			{
+				"fn": "new",
+				"kw": [
+					[
+						"name",
+						{
+							"v": "picard"
+						}
+					],
+					[
+						"rank",
+						{
+							"v": "captain"
+						}
+					]
+				],
+				"rcvr": {
+					"var": "character"
+				}
+			}
+		]
+	]
+]
+#--------------------------------------------------------------------
+
+#
+# name: .new() with keyword arguments
+#====================================================================
+
+
+#====================================================================
+# name: singleton method attached to a specific object [ghi]
+#
+
+#--- code -----------------------------------------------------------
+method $picard.log_entry()
+	return 'stardate ' + %now.to_s
+end
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		{
+			"line": 3,
+			"method": {
+				"body": [
+					[
+						"scope",
+						"return",
+						{
+							"left": {
+								"line": 2,
+								"value": "stardate "
+							},
+							"line": 2,
+							"op": "+",
+							"right": {
+								"left": {
+									"line": 2,
+									"context": "now"
+								},
+								"line": 2,
+								"op": ".",
+								"right": "to_s"
+							}
+						},
+						{
+							"line": 2
+						}
+					]
+				],
+				"name": "log_entry",
+				"params": [],
+				"receiver": {
+					"var": "picard"
+				}
+			}
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM -----------------------------------------------------------
+[
+	[
+		{
+			"method": {
+				"bd": [
+					[
+						"scope",
+						"return",
+						[
+							{
+								"cmd": "mc"
+							},
+							{
+								"a": [
+									[
+										{
+											"cmd": "mc"
+										},
+										{
+											"fn": "to_s",
+											"rcvr": {
+												"context": "now"
+											}
+										}
+									]
+								],
+								"fn": "+",
+								"rcvr": {
+									"v": "stardate "
+								}
+							}
+						]
+					]
+				],
+				"name": "log_entry",
+				"pm": [],
+				"rcvr": {
+					"var": "picard"
+				}
+			}
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#
+# name: singleton method attached to a specific object
+#====================================================================
+
+
+# amend — extend a class in place
+#====================================================================
+# name: amend [ghi]
+# extend a class in place
+#
+
+#--- code -----------------------------------------------------------
+amend $character
+	method &farewell()
+		return 'farewell, ' + @name
+	end
+end
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		{
+			"amend": {
+				"body": [
+					[
+						{
+							"line": 4,
+							"method": {
+								"body": [
+									[
+										"scope",
+										"return",
+										{
+											"left": {
+												"line": 3,
+												"value": "farewell, "
+											},
+											"line": 3,
+											"op": "+",
+											"right": {
+												"at": "name",
+												"line": 3
+											}
+										},
+										{
+											"line": 3
+										}
+									]
+								],
+								"name": "farewell",
+								"params": []
+							}
+						}
+					]
+				],
+				"target": {
+					"line": 1,
+					"var": "character"
+				}
+			},
+			"line": 5
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM -----------------------------------------------------------
+[
+	[
+		{
+			"amend": {
+				"bd": [
+					[
+						{
+							"method": {
+								"bd": [
+									[
+										"scope",
+										"return",
+										[
+											{
+												"cmd": "mc"
+											},
+											{
+												"a": [
+													[
+														{
+															"cmd": "mc"
+														},
+														{
+															"a": [
+																{
+																	"v": "name"
+																}
+															],
+															"fn": "[]",
+															"rcvr": {
+																"context": "bucket"
+															}
+														}
+													]
+												],
+												"fn": "+",
+												"rcvr": {
+													"v": "farewell, "
+												}
+											}
+										]
+									]
+								],
+								"name": "farewell",
+								"pm": []
+							}
+						}
+					]
+				],
+				"target": {
+					"var": "character"
+				}
+			}
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#
+# name: amend
+# extend a class in place
+#====================================================================
+
+
+#====================================================================
+# System-method sigils
+#====================================================================
+
+
+#====================================================================
+# name: sys atom as RHS (bare reference) [ghi]
+#
+
+#--- code -----------------------------------------------------------
+$self_check = %self
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		"scope",
+		"setvar",
+		"self_check",
+		{
+			"line": 1,
+			"context": "self"
+		},
+		{
+			"line": 1
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM refactor --------------------------------------------------
+[
+	{
+		"frame": true,
+		"fn": "=",
+		"syn": true,
+		"args": ["self_check", [{"context": "self"}]]
+	}
+]
+#--------------------------------------------------------------------
+
+#
+# name: sys atom as RHS (bare reference)
+#====================================================================
+
+
+#====================================================================
+# name: sys atom (call frame) [ghi]
+#
+
+#--- code -----------------------------------------------------------
+$frame = %call
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		"scope",
+		"setvar",
+		"frame",
+		{
+			"line": 1,
+			"context": "call"
+		},
+		{
+			"line": 1
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM refactor --------------------------------------------------
+[
+	{
+		"frame": true,
+		"fn": "=",
+		"syn": true,
+		"args": ["frame", [{"context": "call"}]]
+	}
+]
+#--------------------------------------------------------------------
+
+#
+# name: sys atom (call frame)
+#====================================================================
+
+
+#====================================================================
+# name: sys atom (chain) [ghi]
+#
+
+#--- code -----------------------------------------------------------
+$chain_ref = %chain
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		"scope",
+		"setvar",
+		"chain_ref",
+		{
+			"line": 1,
+			"context": "chain"
+		},
+		{
+			"line": 1
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM refactor --------------------------------------------------
+[
+	{
+		"frame": true,
+		"fn": "=",
+		"syn": true,
+		"args": ["chain_ref", [{"context": "chain"}]]
+	}
+]
+#--------------------------------------------------------------------
+
+#
+# name: sys atom (chain)
+#====================================================================
+
+
+#====================================================================
+# name: sys atom (engine) [ghi]
+#
+
+#--- code -----------------------------------------------------------
+$engine_ref = %engine
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		"scope",
+		"setvar",
+		"engine_ref",
+		{
+			"line": 1,
+			"context": "engine"
+		},
+		{
+			"line": 1
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM refactor --------------------------------------------------
+[
+	{
+		"frame": true,
+		"fn": "=",
+		"syn": true,
+		"args": ["engine_ref", [{"context": "engine"}]]
+	}
+]
+#--------------------------------------------------------------------
+
+#
+# name: sys atom (engine)
+#====================================================================
+
+
+#====================================================================
+# name: sys atom (bucket) [ghi]
+#
+
+#--- code -----------------------------------------------------------
+$bucket_ref = %bucket
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		"scope",
+		"setvar",
+		"bucket_ref",
+		{
+			"line": 1,
+			"context": "bucket"
+		},
+		{
+			"line": 1
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM refactor --------------------------------------------------
+[
+	{
+		"frame": true,
+		"fn": "=",
+		"syn": true,
+		"args": ["bucket_ref", [{"context": "bucket"}]]
+	}
+]
+#--------------------------------------------------------------------
+
+#
+# name: sys atom (bucket)
+#====================================================================
+
+
+#====================================================================
+# name: sys-receiver method call, paren-less [ghi]
+#
+
+#--- code -----------------------------------------------------------
+%stdout.puts 'to standard out'
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		{
+			"args": [
+				{
+					"line": 1,
+					"value": "to standard out"
+				}
+			],
+			"left": {
+				"context": "stdout"
+			},
+			"line": 1,
+			"op": ".",
+			"right": "puts"
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM refactor --------------------------------------------------
+[
+	{
+		"context": "stdout",
+		"fn": "puts",
+		"args": [[{"primitive": "to standard out"}]]
+	}
+]
+#--------------------------------------------------------------------
+
+#
+# name: sys-receiver method call, paren-less
+#====================================================================
+
+
+#====================================================================
+# name: sys-receiver method call, paren-less (stderr) [ghi]
+#
+
+#--- code -----------------------------------------------------------
+%stderr.puts 'to standard error'
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		{
+			"args": [
+				{
+					"line": 1,
+					"value": "to standard error"
+				}
+			],
+			"left": {
+				"context": "stderr"
+			},
+			"line": 1,
+			"op": ".",
+			"right": "puts"
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM refactor --------------------------------------------------
+[
+	{
+		"context": "stderr",
+		"fn": "puts",
+		"args": [[{"primitive": "to standard error"}]]
+	}
+]
+#--------------------------------------------------------------------
+
+#
+# name: sys-receiver method call, paren-less (stderr)
+#====================================================================
+
+
+#====================================================================
+# name: sys-receiver method call, parens form + bareword `puts` variants [ghi]
+#
+
+#--- code -----------------------------------------------------------
+%stdout.puts('hi')
+%stdout.puts
+puts 1
+puts(true)
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		{
+			"args": [
+				{
+					"line": 1,
+					"value": "hi"
+				}
+			],
+			"left": {
+				"context": "stdout"
+			},
+			"line": 1,
+			"op": ".",
+			"right": "puts"
+		}
+	],
+	[
+		{
+			"left": {
+				"line": 2,
+				"context": "stdout"
+			},
+			"line": 2,
+			"op": ".",
+			"right": "puts"
+		}
+	],
+	[
+		{
+			"bwc": "puts"
+		},
+		{
+			"line": 3,
+			"value": 1
+		},
+		{
+			"line": 3
+		}
+	],
+	[
+		{
+			"bwc": "puts"
+		},
+		{
+			"line": 4,
+			"value": true
+		},
+		{
+			"line": 4
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM refactor --------------------------------------------------
+[
+	{
+		"context": "stdout",
+		"fn": "puts",
+		"args": [[{"primitive": "hi"}]]
+	},
+	{"context": "stdout", "fn": "puts"},
+	{
+		"bwc": "puts",
+		"args": [[{"primitive": 1}]]
+	},
+	{
+		"bwc": "puts",
+		"args": [[{"primitive": true}]]
+	}
+]
+#--------------------------------------------------------------------
+
+#
+# name: sys-receiver method call, parens form + bareword `puts` variants
+#====================================================================
+
+
+#====================================================================
+# name: sys-receiver bare-method access as statement [ghi]
+#
+
+#--- code -----------------------------------------------------------
+%stdin.read_line
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		{
+			"left": {
+				"line": 1,
+				"context": "stdin"
+			},
+			"line": 1,
+			"op": ".",
+			"right": "read_line"
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM refactor --------------------------------------------------
+[{"context": "stdin", "fn": "read_line"}]
+#--------------------------------------------------------------------
+
+#
+# name: sys-receiver bare-method access as statement
+#====================================================================
+
+
+#====================================================================
+# name: sys.method as RHS expression (bare-method access) [ghi]
+#
+
+#--- code -----------------------------------------------------------
+$input = %stdin.read_line
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		"scope",
+		"setvar",
+		"input",
+		{
+			"left": {
+				"line": 1,
+				"context": "stdin"
+			},
+			"line": 1,
+			"op": ".",
+			"right": "read_line"
+		},
+		{
+			"line": 1
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM refactor --------------------------------------------------
+[
+	{
+		"frame": true,
+		"fn": "=",
+		"syn": true,
+		"args": ["input", [{"context": "stdin", "fn": "read_line"}]]
+	}
+]
+#--------------------------------------------------------------------
+
+#
+# name: sys.method as RHS expression (bare-method access)
+#====================================================================
+
+
+#====================================================================
+# name: sys atom (now) as RHS [ghi]
+#
+
+#--- code -----------------------------------------------------------
+$timestamp = %now
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		"scope",
+		"setvar",
+		"timestamp",
+		{
+			"line": 1,
+			"context": "now"
+		},
+		{
+			"line": 1
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM refactor --------------------------------------------------
+[
+	{
+		"frame": true,
+		"fn": "=",
+		"syn": true,
+		"args": ["timestamp", [{"context": "now"}]]
+	}
+]
+#--------------------------------------------------------------------
+
+#
+# name: sys atom (now) as RHS
+#====================================================================
+
+
+#====================================================================
+# name: sys-receiver method call with numeric arg as RHS [ghi]
+#
+
+#--- code -----------------------------------------------------------
+$noise = %random.bytes(16)
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		"scope",
+		"setvar",
+		"noise",
+		[
+			{
+				"line": 1,
+				"context": "random"
+			},
+			"bytes",
+			{
+				"args": [
+					{
+						"line": 1,
+						"value": 16
+					}
+				],
+				"line": 1
+			}
+		],
+		{
+			"line": 1
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM -----------------------------------------------------------
+[
+	[
+		{
+			"cmd": "="
+		},
+		"noise",
+		[
+			{
+				"cmd": "mc"
+			},
+			{
+				"a": [
+					{
+						"v": 16
+					}
+				],
+				"fn": "bytes",
+				"rcvr": {
+					"context": "random"
+				}
+			}
+		]
+	]
+]
+#--------------------------------------------------------------------
+
+#
+# name: sys-receiver method call with numeric arg as RHS
+#====================================================================
+
+
+#====================================================================
+# name: sys-receiver subscript as RHS [ghi]
+#
+
+#--- code -----------------------------------------------------------
+$puckd = %fetch('caspian.uno/csv.casp')
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		"scope",
+		"setvar",
+		"puckd",
+		{
+			"fetch": {
+				"args": [
+					{
+						"line": 1,
+						"value": "caspian.uno/csv.casp"
+					}
+				]
+			},
+			"line": 1
+		},
+		{
+			"line": 1
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM -----------------------------------------------------------
+[
+	[
+		{
+			"cmd": "="
+		},
+		"puckd",
+		{
+			"ft": {
+				"a": [
+					{
+						"v": "caspian.uno/csv.casp"
+					}
+				]
+			}
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#
+# name: sys-receiver subscript as RHS
+#====================================================================
+
+
+#====================================================================
+# name: sys-receiver method call inside operator context (RHS of assignment) [ghi]
+#
+
+#--- code -----------------------------------------------------------
+$banged = %stdin.read_line + '!'
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		"scope",
+		"setvar",
+		"banged",
+		{
+			"left": {
+				"left": {
+					"line": 1,
+					"context": "stdin"
+				},
+				"line": 1,
+				"op": ".",
+				"right": "read_line"
+			},
+			"line": 1,
+			"op": "+",
+			"right": {
+				"line": 1,
+				"value": "!"
+			}
+		},
+		{
+			"line": 1
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM refactor --------------------------------------------------
+[
+	{
+		"frame": true,
+		"fn": "=",
+		"syn": true,
+		"args": [
+			"banged",
+			[
+				{"context": "stdin", "fn": "read_line"},
+				{
+					"rv": true,
+					"fn": "+",
+					"syn": true,
+					"args": [[{"primitive": "!"}]]
+				}
+			]
+		]
+	}
+]
+#--------------------------------------------------------------------
+
+#
+# name: sys-receiver method call inside operator context (RHS of assignment)
+#====================================================================
+
+
+#====================================================================
+# name: %chain.X [ghi]
+# one representative access; the "no bare-name shortcut" property is an engine concern, not exercised here.
+#
+
+#--- code -----------------------------------------------------------
+$net = %chain.net
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		"scope",
+		"setvar",
+		"net",
+		{
+			"left": {
+				"line": 1,
+				"context": "chain"
+			},
+			"line": 1,
+			"op": ".",
+			"right": "net"
+		},
+		{
+			"line": 1
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM refactor --------------------------------------------------
+[
+	{
+		"frame": true,
+		"fn": "=",
+		"syn": true,
+		"args": ["net", [{"context": "chain", "fn": "net"}]]
+	}
+]
+#--------------------------------------------------------------------
+
+#
+# name: %chain.X
+# one representative access; the "no bare-name shortcut" property is an engine concern, not exercised here.
+#====================================================================
+
+
+#====================================================================
+# name: sys-receiver-as-nested-expression inside operator context ($x variant) [ghi]
+#
+
+#--- code -----------------------------------------------------------
+$x = %stdin.read_line + '!'
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		"scope",
+		"setvar",
+		"x",
+		{
+			"left": {
+				"left": {
+					"line": 1,
+					"context": "stdin"
+				},
+				"line": 1,
+				"op": ".",
+				"right": "read_line"
+			},
+			"line": 1,
+			"op": "+",
+			"right": {
+				"line": 1,
+				"value": "!"
+			}
+		},
+		{
+			"line": 1
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM refactor --------------------------------------------------
+[
+	{
+		"frame": true,
+		"fn": "=",
+		"syn": true,
+		"args": [
+			"x",
+			[
+				{"context": "stdin", "fn": "read_line"},
+				{
+					"rv": true,
+					"fn": "+",
+					"syn": true,
+					"args": [[{"primitive": "!"}]]
+				}
+			]
+		]
+	}
+]
+#--------------------------------------------------------------------
+
+#
+# name: sys-receiver-as-nested-expression inside operator context ($x variant)
+#====================================================================
+
+
+# design decisions made unilaterally for Section 16:
+#
+#   - sys atom shape: {sys: "name"} — parallel to {var: "name"} and {bwc: "name"}
+#   - sys-receiver method call: [{sys: "name"}, method, {args: [...]}] — same
+#     shape as $-receiver method call, with the {sys: X} receiver in place of
+#     {var: X}. runtime dispatches on receiver type.
+#   - sys subscript: [{sys: "name"}, "[]", {args: [key_expr]}] — subscript is
+#     a "[]" method call, matching the $-var and hash/array subscript shape.
+#   - {sys: X}.attr with no parens uses the same "attr" method-name shape as
+#     $recv.attr — no separate "field access" node. runtime distinguishes.
+#
+
+#====================================================================
+# Pipes
+#====================================================================
+
+
+# The statement-leading pipe (`| bwc [args]`) rewrites the immediately-
+# preceding statement by wrapping its value in a bwc call. Whitespace and
+# newlines around the pipe are not significant — the three tests below
+# produce identical CaspJ.
+
+#====================================================================
+# name: pipe on its own line after a multi-line method [ghi]
+#
+
+#--- code -----------------------------------------------------------
+method &foo()
+end
+
+| private
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		{
+			"left": {
+				"line": 2,
+				"method": {
+					"body": [],
+					"name": "foo",
+					"params": []
+				}
+			},
+			"line": 4,
+			"op": "|",
+			"right": [
+				{
+					"bwc": "private",
+					"line": 4
+				}
+			]
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM -----------------------------------------------------------
+[
+	[
+		[
+			{
+				"bwc": "private"
+			},
+			{
+				"method": {
+					"bd": [],
+					"name": "foo",
+					"pm": []
+				}
+			}
+		]
+	]
+]
+#--------------------------------------------------------------------
+
+#
+# name: pipe on its own line after a multi-line method
+#====================================================================
+
+
+#====================================================================
+# name: pipe on the same line as `end` after a multi-line method [ghi]
+#
+
+#--- code -----------------------------------------------------------
+method &foo()
+end | private
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		{
+			"left": {
+				"line": 2,
+				"method": {
+					"body": [],
+					"name": "foo",
+					"params": []
+				}
+			},
+			"line": 2,
+			"op": "|",
+			"right": [
+				{
+					"bwc": "private",
+					"line": 2
+				}
+			]
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM -----------------------------------------------------------
+[
+	[
+		[
+			{
+				"bwc": "private"
+			},
+			{
+				"method": {
+					"bd": [],
+					"name": "foo",
+					"pm": []
+				}
+			}
+		]
+	]
+]
+#--------------------------------------------------------------------
+
+#
+# name: pipe on the same line as `end` after a multi-line method
+#====================================================================
+
+
+# --- end sample
+
+#====================================================================
+# name: entire method + pipe on one line [ghi]
+#
+
+#--- code -----------------------------------------------------------
+method &foo() end | private
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		{
+			"left": {
+				"line": 1,
+				"method": {
+					"body": [],
+					"name": "foo",
+					"params": []
+				}
+			},
+			"line": 1,
+			"op": "|",
+			"right": [
+				{
+					"bwc": "private",
+					"line": 1
+				}
+			]
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM -----------------------------------------------------------
+[
+	[
+		[
+			{
+				"bwc": "private"
+			},
+			{
+				"method": {
+					"bd": [],
+					"name": "foo",
+					"pm": []
+				}
+			}
+		]
+	]
+]
+#--------------------------------------------------------------------
+
+#
+# name: entire method + pipe on one line
+#====================================================================
+
+
+#====================================================================
+# name: two pipes chained (nested wrapping) [ghi]
+#
+
+#--- code -----------------------------------------------------------
+method &whatever()
+end
+| autorun
+| main
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		{
+			"left": {
+				"left": {
+					"line": 2,
+					"method": {
+						"body": [],
+						"name": "whatever",
+						"params": []
+					}
+				},
+				"line": 3,
+				"op": "|",
+				"right": [
+					{
+						"bwc": "autorun",
+						"line": 3
+					}
+				]
+			},
+			"line": 4,
+			"op": "|",
+			"right": [
+				{
+					"bwc": "main",
+					"line": 4
+				}
+			]
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM -----------------------------------------------------------
+[
+	[
+		[
+			{
+				"bwc": "main"
+			},
+			[
+				{
+					"bwc": "autorun"
+				},
+				{
+					"method": {
+						"bd": [],
+						"name": "whatever",
+						"pm": []
+					}
+				}
+			]
+		]
+	]
+]
+#--------------------------------------------------------------------
+
+#
+# name: two pipes chained (nested wrapping)
+#====================================================================
+
+
+#====================================================================
+# name: statement-level chained pipe with a pipe inside a call arg [ghi]
+# left-to-right associativity, rightmost pipe outermost
+#
+
+#--- code -----------------------------------------------------------
+&foo | &bar(&yeah | &dude) | &gup
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		{
+			"left": {
+				"left": [
+					{
+						"amp": "foo",
+						"line": 1
+					}
+				],
+				"op": "|",
+				"right": [
+					{
+						"amp": "bar"
+					},
+					{
+						"left": [
+							{
+								"amp": "yeah",
+								"line": 1
+							}
+						],
+						"op": "|",
+						"right": [
+							{
+								"amp": "dude"
+							}
+						]
+					}
+				]
+			},
+			"line": 1,
+			"op": "|",
+			"right": [
+				{
+					"amp": "gup"
+				}
+			]
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM -----------------------------------------------------------
+[
+	[
+		[
+			{
+				"cmd": "mc"
+			},
+			{
+				"a": [
+					[
+						{
+							"cmd": "mc"
+						},
+						{
+							"a": [
+								[
+									{
+										"cmd": "mc"
+									},
+									{
+										"fn": "call",
+										"rcvr": {
+											"var": "foo"
+										}
+									}
+								],
+								[
+									{
+										"cmd": "mc"
+									},
+									{
+										"a": [
+											[
+												{
+													"cmd": "mc"
+												},
+												{
+													"fn": "call",
+													"rcvr": {
+														"var": "yeah"
+													}
+												}
+											]
+										],
+										"fn": "call",
+										"rcvr": {
+											"var": "dude"
+										}
+									}
+								]
+							],
+							"fn": "call",
+							"rcvr": {
+								"var": "bar"
+							}
+						}
+					]
+				],
+				"fn": "call",
+				"rcvr": {
+					"var": "gup"
+				}
+			}
+		]
+	]
+]
+#--------------------------------------------------------------------
+
+#
+# name: statement-level chained pipe with a pipe inside a call arg
+# left-to-right associativity, rightmost pipe outermost
+#====================================================================
+
+
+#====================================================================
+# name: paren-less bwc arg inside a pipe [ghi]
+# `&yeah 'x'` in pipe LHS is a bwc call with 'x' as its arg
+#
+
+#--- code -----------------------------------------------------------
+&foo | &bar(&yeah 'x' | &dude) | &gup
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		{
+			"left": {
+				"left": [
+					{
+						"amp": "foo",
+						"line": 1
+					}
+				],
+				"op": "|",
+				"right": [
+					{
+						"amp": "bar"
+					},
+					{
+						"left": [
+							{
+								"amp": "yeah",
+								"line": 1
+							},
+							{
+								"line": 1,
+								"value": "x"
+							}
+						],
+						"op": "|",
+						"right": [
+							{
+								"amp": "dude"
+							}
+						]
+					}
+				]
+			},
+			"line": 1,
+			"op": "|",
+			"right": [
+				{
+					"amp": "gup"
+				}
+			]
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM -----------------------------------------------------------
+[
+	[
+		[
+			{
+				"cmd": "mc"
+			},
+			{
+				"a": [
+					[
+						{
+							"cmd": "mc"
+						},
+						{
+							"a": [
+								[
+									{
+										"cmd": "mc"
+									},
+									{
+										"fn": "call",
+										"rcvr": {
+											"var": "foo"
+										}
+									}
+								],
+								[
+									{
+										"cmd": "mc"
+									},
+									{
+										"a": [
+											[
+												{
+													"cmd": "mc"
+												},
+												{
+													"a": [
+														{
+															"v": "x"
+														}
+													],
+													"fn": "call",
+													"rcvr": {
+														"var": "yeah"
+													}
+												}
+											]
+										],
+										"fn": "call",
+										"rcvr": {
+											"var": "dude"
+										}
+									}
+								]
+							],
+							"fn": "call",
+							"rcvr": {
+								"var": "bar"
+							}
+						}
+					]
+				],
+				"fn": "call",
+				"rcvr": {
+					"var": "gup"
+				}
+			}
+		]
+	]
+]
+#--------------------------------------------------------------------
+
+#
+# name: paren-less bwc arg inside a pipe
+# `&yeah 'x'` in pipe LHS is a bwc call with 'x' as its arg
+#====================================================================
+
+
+#====================================================================
+# name: `A | B || C` [ghi]
+# pipe binds tighter than `||`, so this groups as `(A | B) || C`
+#
+
+#--- code -----------------------------------------------------------
+&foo | &bar(&yeah | &dude) || &gup
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		{
+			"left": {
+				"left": [
+					{
+						"amp": "foo",
+						"line": 1
+					}
+				],
+				"op": "|",
+				"right": [
+					{
+						"amp": "bar"
+					},
+					{
+						"left": [
+							{
+								"amp": "yeah",
+								"line": 1
+							}
+						],
+						"op": "|",
+						"right": [
+							{
+								"amp": "dude"
+							}
+						]
+					}
+				]
+			},
+			"line": 1,
+			"op": "||",
+			"right": [
+				{
+					"amp": "gup",
+					"line": 1
+				}
+			]
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM -----------------------------------------------------------
+[
+	[
+		{
+			"left": [
+				{
+					"cmd": "mc"
+				},
+				{
+					"a": [
+						[
+							{
+								"cmd": "mc"
+							},
+							{
+								"fn": "call",
+								"rcvr": {
+									"var": "foo"
+								}
+							}
+						],
+						[
+							{
+								"cmd": "mc"
+							},
+							{
+								"a": [
+									[
+										{
+											"cmd": "mc"
+										},
+										{
+											"fn": "call",
+											"rcvr": {
+												"var": "yeah"
+											}
+										}
+									]
+								],
+								"fn": "call",
+								"rcvr": {
+									"var": "dude"
+								}
+							}
+						]
+					],
+					"fn": "call",
+					"rcvr": {
+						"var": "bar"
+					}
+				}
+			],
+			"op": "||",
+			"right": [
+				{
+					"cmd": "mc"
+				},
+				{
+					"fn": "call",
+					"rcvr": {
+						"var": "gup"
+					}
+				}
+			]
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#
+# name: `A | B || C`
+# pipe binds tighter than `||`, so this groups as `(A | B) || C`
+#====================================================================
+
+
+#====================================================================
+# name: `(A | B) || C` [ghi]
+# explicit parens produce identical CaspJ to the paren-less form above
+#
+
+#--- code -----------------------------------------------------------
+(&foo | &bar(&yeah | &dude)) || &gup
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		{
+			"left": {
+				"left": [
+					{
+						"amp": "foo",
+						"line": 1
+					}
+				],
+				"op": "|",
+				"right": [
+					{
+						"amp": "bar"
+					},
+					{
+						"left": [
+							{
+								"amp": "yeah",
+								"line": 1
+							}
+						],
+						"op": "|",
+						"right": [
+							{
+								"amp": "dude"
+							}
+						]
+					}
+				]
+			},
+			"line": 1,
+			"op": "||",
+			"right": [
+				{
+					"amp": "gup",
+					"line": 1
+				}
+			]
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM -----------------------------------------------------------
+[
+	[
+		{
+			"left": [
+				{
+					"cmd": "mc"
+				},
+				{
+					"a": [
+						[
+							{
+								"cmd": "mc"
+							},
+							{
+								"fn": "call",
+								"rcvr": {
+									"var": "foo"
+								}
+							}
+						],
+						[
+							{
+								"cmd": "mc"
+							},
+							{
+								"a": [
+									[
+										{
+											"cmd": "mc"
+										},
+										{
+											"fn": "call",
+											"rcvr": {
+												"var": "yeah"
+											}
+										}
+									]
+								],
+								"fn": "call",
+								"rcvr": {
+									"var": "dude"
+								}
+							}
+						]
+					],
+					"fn": "call",
+					"rcvr": {
+						"var": "bar"
+					}
+				}
+			],
+			"op": "||",
+			"right": [
+				{
+					"cmd": "mc"
+				},
+				{
+					"fn": "call",
+					"rcvr": {
+						"var": "gup"
+					}
+				}
+			]
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#
+# name: `(A | B) || C`
+# explicit parens produce identical CaspJ to the paren-less form above
+#====================================================================
+
+
+#====================================================================
+# name: pipe expression inside a method-call arg [ghi]
+# preserved as `{op: "|", left, right}` atom
+#
+
+#--- code -----------------------------------------------------------
+$foo.bar(&gup | &baz)
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		{
+			"args": [
+				{
+					"left": [
+						{
+							"amp": "gup",
+							"line": 1
+						}
+					],
+					"op": "|",
+					"right": [
+						{
+							"amp": "baz"
+						}
+					]
+				}
+			],
+			"left": {
+				"var": "foo"
+			},
+			"line": 1,
+			"op": ".",
+			"right": "bar"
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM -----------------------------------------------------------
+[
+	[
+		[
+			{
+				"cmd": "mc"
+			},
+			{
+				"a": [
+					[
+						{
+							"cmd": "mc"
+						},
+						{
+							"a": [
+								[
+									{
+										"cmd": "mc"
+									},
+									{
+										"fn": "call",
+										"rcvr": {
+											"var": "gup"
+										}
+									}
+								]
+							],
+							"fn": "call",
+							"rcvr": {
+								"var": "baz"
+							}
+						}
+					]
+				],
+				"fn": "bar",
+				"rcvr": {
+					"var": "foo"
+				}
+			}
+		]
+	]
+]
+#--------------------------------------------------------------------
+
+#
+# name: pipe expression inside a method-call arg
+# preserved as `{op: "|", left, right}` atom
+#====================================================================
+
+
+# design notes for Section 17 (pipes):
+#
+#   Statement-leading pipe (`| bwc [args]`) is a POST-STATEMENT MODIFIER.
+#   It rewrites the immediately-preceding non-comment statement in the
+#   current scope by wrapping its value in a bwc call.
+#
+#   Shape: `[{bwc: "modifier"}, <prev_value>, <extra_args>...]`
+#
+#   `end | modifier` and `| modifier` (on the next line) and `end\n\n| modifier`
+#   (with a blank line between) all produce identical CaspJ — whitespace and
+#   newlines around the pipe are not significant.
+#
+#   Chained pipes wrap outward:
+#     value
+#     | a
+#     | b
+#     -> [{bwc: "b"}, [{bwc: "a"}, value]]
+#
+#   Comments between the value and the pipe are skipped when finding the
+#   target statement; the pipe still rewrites the value, not the comment.
+#
+# survey material below: expression-position pipes (`$value = LHS | stage | ...`)
+# are the more classical pipe form and haven't been designed yet. They need
+# bwc-as-expression semantics and the `|&` sticky-null-propagation variant.
+# Deferred.
+
+# basic — first-arg form
+#====================================================================
+# name: pipe basic form [ghi]
+# first-arg amp calls
+#
+
+#--- code -----------------------------------------------------------
+$value = &get_key | &normalize | &fetch
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		"scope",
+		"setvar",
+		"value",
+		{
+			"left": {
+				"left": [
+					{
+						"amp": "get_key",
+						"line": 1
+					}
+				],
+				"op": "|",
+				"right": [
+					{
+						"amp": "normalize"
+					}
+				]
+			},
+			"op": "|",
+			"right": [
+				{
+					"amp": "fetch"
+				}
+			]
+		},
+		{
+			"line": 1
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM -----------------------------------------------------------
+[
+	[
+		{
+			"cmd": "="
+		},
+		"value",
+		[
+			{
+				"cmd": "mc"
+			},
+			{
+				"a": [
+					[
+						{
+							"cmd": "mc"
+						},
+						{
+							"a": [
+								[
+									{
+										"cmd": "mc"
+									},
+									{
+										"fn": "call",
+										"rcvr": {
+											"var": "get_key"
+										}
+									}
+								]
+							],
+							"fn": "call",
+							"rcvr": {
+								"var": "normalize"
+							}
+						}
+					]
+				],
+				"fn": "call",
+				"rcvr": {
+					"var": "fetch"
+				}
+			}
+		]
+	]
+]
+#--------------------------------------------------------------------
+
+#
+# name: pipe basic form
+# first-arg amp calls
+#====================================================================
+
+
+# with arguments on each stage
+#====================================================================
+# name: pipe RHS bareword-amp with paren-less args [ghi]
+# `&sort 'asc'` and `&take 10` on the pipe RHS take extras alongside the piped value
+#
+
+#--- code -----------------------------------------------------------
+$top10 = &fetch_records() | &sort 'asc' | &take 10
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		"scope",
+		"setvar",
+		"top10",
+		{
+			"left": {
+				"left": [
+					{
+						"amp": "fetch_records",
+						"line": 1
+					}
+				],
+				"op": "|",
+				"right": [
+					{
+						"amp": "sort"
+					},
+					{
+						"line": 1,
+						"value": "asc"
+					}
+				]
+			},
+			"op": "|",
+			"right": [
+				{
+					"amp": "take"
+				},
+				{
+					"line": 1,
+					"value": 10
+				}
+			]
+		},
+		{
+			"line": 1
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM -----------------------------------------------------------
+[
+	[
+		{
+			"cmd": "="
+		},
+		"top10",
+		[
+			{
+				"cmd": "mc"
+			},
+			{
+				"a": [
+					[
+						{
+							"cmd": "mc"
+						},
+						{
+							"a": [
+								[
+									{
+										"cmd": "mc"
+									},
+									{
+										"fn": "call",
+										"rcvr": {
+											"var": "fetch_records"
+										}
+									}
+								],
+								{
+									"v": "asc"
+								}
+							],
+							"fn": "call",
+							"rcvr": {
+								"var": "sort"
+							}
+						}
+					],
+					{
+						"v": 10
+					}
+				],
+				"fn": "call",
+				"rcvr": {
+					"var": "take"
+				}
+			}
+		]
+	]
+]
+#--------------------------------------------------------------------
+
+#
+# name: pipe RHS bareword-amp with paren-less args
+#====================================================================
+
+
+#====================================================================
+# name: generalized `&(EXPR)` as pipe RHS [ghi]
+# `&(inner_pipe)` invokes the callable produced by the inner expression — full CaspJ preserves the nested pipe and the &-invocation; norm desugars to nested calls
+#
+
+#--- code -----------------------------------------------------------
+$x = &foo | &(&bear | &baz) | &gup
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		"scope",
+		"setvar",
+		"x",
+		{
+			"left": {
+				"left": [
+					{
+						"amp": "foo",
+						"line": 1
+					}
+				],
+				"op": "|",
+				"right": [
+					{
+						"amp": {
+							"left": [
+								{
+									"amp": "bear",
+									"line": 1
+								}
+							],
+							"op": "|",
+							"right": [
+								{
+									"amp": "baz"
+								}
+							]
+						},
+						"line": 1
+					}
+				]
+			},
+			"op": "|",
+			"right": [
+				{
+					"amp": "gup"
+				}
+			]
+		},
+		{
+			"line": 1
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM -----------------------------------------------------------
+[
+	[
+		{
+			"cmd": "="
+		},
+		"x",
+		[
+			{
+				"cmd": "mc"
+			},
+			{
+				"a": [
+					[
+						{
+							"cmd": "mc"
+						},
+						{
+							"a": [
+								[
+									{
+										"cmd": "mc"
+									},
+									{
+										"fn": "call",
+										"rcvr": {
+											"var": "foo"
+										}
+									}
+								]
+							],
+							"fn": "call",
+							"rcvr": [
+								{
+									"cmd": "mc"
+								},
+								{
+									"a": [
+										[
+											{
+												"cmd": "mc"
+											},
+											{
+												"fn": "call",
+												"rcvr": {
+													"var": "bear"
+												}
+											}
+										]
+									],
+									"fn": "call",
+									"rcvr": {
+										"var": "baz"
+									}
+								}
+							]
+						}
+					]
+				],
+				"fn": "call",
+				"rcvr": {
+					"var": "gup"
+				}
+			}
+		]
+	]
+]
+#--------------------------------------------------------------------
+
+#
+# name: generalized `&(EXPR)` as pipe RHS
+#====================================================================
+
+
+# three equivalent forms all normalize to the same method-call shape
+#====================================================================
+# name: `&<obj>` normalizes to the object's `.call` method [ghi]
+# `&` before any object means "invoke the object's `.call` method" — always,
+# no runtime property lookup. Full CaspJ preserves the three surface forms
+# distinctly ({var}/method-call for `$foo.call(...)`, `{amp: "foo"}` for
+# `&foo`, and `{amp: {var: "foo"}}` for the `&$foo` shorthand). Norm collapses
+# all three to a method_call with `fn: "call"` — the runtime sees one shape.
+#
+
+#--- code -----------------------------------------------------------
+$foo.call('xyz')
+&foo 'xyz'
+&$foo 'xyz'
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		{
+			"args": [
+				{
+					"line": 1,
+					"value": "xyz"
+				}
+			],
+			"left": {
+				"var": "foo"
+			},
+			"line": 1,
+			"op": ".",
+			"right": "call"
+		}
+	],
+	[
+		{
+			"amp": "foo"
+		},
+		{
+			"line": 2,
+			"value": "xyz"
+		},
+		{
+			"line": 2
+		}
+	],
+	[
+		{
+			"amp": {
+				"line": 3,
+				"var": "foo"
+			}
+		},
+		{
+			"line": 3,
+			"value": "xyz"
+		},
+		{
+			"line": 3
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM -----------------------------------------------------------
+[
+	[
+		[
+			{
+				"cmd": "mc"
+			},
+			{
+				"a": [
+					{
+						"v": "xyz"
+					}
+				],
+				"fn": "call",
+				"rcvr": {
+					"var": "foo"
+				}
+			}
+		]
+	],
+	[
+		{
+			"cmd": "mc"
+		},
+		{
+			"a": [
+				{
+					"v": "xyz"
+				}
+			],
+			"fn": "call",
+			"rcvr": {
+				"var": "foo"
+			}
+		}
+	],
+	[
+		{
+			"cmd": "mc"
+		},
+		{
+			"a": [
+				{
+					"v": "xyz"
+				}
+			],
+			"fn": "call",
+			"rcvr": {
+				"var": "foo"
+			}
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#
+# name: `&<obj>` normalizes to the object's `.call` method
+#====================================================================
+
+
+# receiver form on the RHS
+#====================================================================
+# name: pipe receiver form on the RHS [ghi]
+#
+
+#--- code -----------------------------------------------------------
+$html = &normalize($text) | $formatter.render
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		"scope",
+		"setvar",
+		"html",
+		{
+			"left": [
+				{
+					"amp": "normalize",
+					"line": 1
+				},
+				{
+					"line": 1,
+					"var": "text"
+				}
+			],
+			"op": "|",
+			"right": {
+				"left": {
+					"var": "formatter"
+				},
+				"op": ".",
+				"right": "render"
+			}
+		},
+		{
+			"line": 1
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM -----------------------------------------------------------
+[
+	[
+		{
+			"cmd": "="
+		},
+		"html",
+		[
+			{
+				"cmd": "mc"
+			},
+			{
+				"a": [
+					[
+						{
+							"cmd": "mc"
+						},
+						{
+							"a": [
+								{
+									"var": "text"
+								}
+							],
+							"fn": "call",
+							"rcvr": {
+								"var": "normalize"
+							}
+						}
+					]
+				],
+				"fn": "render",
+				"rcvr": {
+					"var": "formatter"
+				}
+			}
+		]
+	]
+]
+#--------------------------------------------------------------------
+
+#
+# name: pipe receiver form on the RHS
+#====================================================================
+
+
+#====================================================================
+# name: pipe chain of `$obj.method` stages [ghi]
+# each stage prepends the LHS as the first positional arg of the RHS
+# call. `$foo.bar | $gup.zap | $bear.blah` runs as
+# `$bear.blah($gup.zap($foo.bar))`.
+#
+
+#--- code -----------------------------------------------------------
+$foo.bar | $gup.zap | $bear.blah
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		{
+			"left": {
+				"left": {
+					"left": {
+						"line": 1,
+						"var": "foo"
+					},
+					"line": 1,
+					"op": ".",
+					"right": "bar"
+				},
+				"op": "|",
+				"right": {
+					"left": {
+						"var": "gup"
+					},
+					"op": ".",
+					"right": "zap"
+				}
+			},
+			"line": 1,
+			"op": "|",
+			"right": {
+				"left": {
+					"var": "bear"
+				},
+				"op": ".",
+				"right": "blah"
+			}
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM refactor --------------------------------------------------
+[
+	{"var": "foo", "fn": "bar"},
+	{
+		"rv": true,
+		"fn": "|",
+		"args": [[{"var": "gup", "fn": "zap"}]]
+	},
+	{
+		"rv": true,
+		"fn": "|",
+		"args": [[{"var": "bear", "fn": "blah"}]]
+	}
+]
+#--------------------------------------------------------------------
+
+#
+# name: pipe chain of `$obj.method` stages
+#====================================================================
+
+
+# sticky null-propagation with |&, wrapped over multiple lines
+
+#====================================================================
+# name: multi-line pipe with trailing `|&` [ghi]
+# `|&` is the null-safe pipe (distinct from `|`); trailing `|` or `|&` at line end continues the statement
+#
+
+#--- code -----------------------------------------------------------
+$saved = &get_record 42 |&
+	&validate |
+	&transform |
+	&save
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		"scope",
+		"setvar",
+		"saved",
+		{
+			"left": {
+				"left": {
+					"left": [
+						{
+							"amp": "get_record",
+							"line": 1
+						},
+						{
+							"line": 1,
+							"value": 42
+						}
+					],
+					"op": "|&",
+					"right": [
+						{
+							"amp": "validate"
+						}
+					]
+				},
+				"op": "|",
+				"right": [
+					{
+						"amp": "transform"
+					}
+				]
+			},
+			"op": "|",
+			"right": [
+				{
+					"amp": "save"
+				}
+			]
+		},
+		{
+			"line": 1
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM -----------------------------------------------------------
+[
+	[
+		{
+			"cmd": "="
+		},
+		"saved",
+		[
+			{
+				"cmd": "mc"
+			},
+			{
+				"a": [
+					[
+						{
+							"cmd": "mc"
+						},
+						{
+							"a": [
+								[
+									{
+										"cmd": "mc"
+									},
+									{
+										"a": [
+											[
+												{
+													"cmd": "mc"
+												},
+												{
+													"a": [
+														{
+															"v": 42
+														}
+													],
+													"fn": "call",
+													"rcvr": {
+														"var": "get_record"
+													}
+												}
+											]
+										],
+										"fn": "call",
+										"rcvr": {
+											"var": "validate"
+										}
+									}
+								]
+							],
+							"fn": "call",
+							"rcvr": {
+								"var": "transform"
+							}
+						}
+					]
+				],
+				"fn": "call",
+				"rcvr": {
+					"var": "save"
+				}
+			}
+		]
+	]
+]
+#--------------------------------------------------------------------
+
+#
+# name: multi-line pipe with trailing `|&`
+#====================================================================
+
+#====================================================================
+# documentation and vibecode heredocs
+#====================================================================
+
+# documentation and vibecode are ordinary sys-methods invoked as calls.
+# The heredoc form is the common one — the block body becomes the single
+# arg. Runtime rule: neither method interpolates its arg even when the
+# terminator is quoted (`<<"EOF"`). The transpiler doesn't enforce that
+# — it emits the same `[{sys: NAME}, {value: text, dq?}]` shape as any
+# other sys-call with a heredoc arg; the "no interpolation" rule is
+# runtime-side.
+
+
+#====================================================================
+# name: documentation with plain heredoc [ghi]
+# `documentation <<EOF ... EOF` — sys-method call with heredoc body as arg
+#
+
+#--- code -----------------------------------------------------------
+$foo = 1
+
+documentation <<EOF
+plain doc text
+across two lines
+EOF
+
+$foo = 2
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		"scope",
+		"setvar",
+		"foo",
+		{
+			"line": 1,
+			"value": 1
+		},
+		{
+			"line": 1
+		}
+	],
+	[
+		{
+			"bwc": "documentation"
+		},
+		{
+			"value": "plain doc text\nacross two lines"
+		},
+		{
+			"line": 3
+		}
+	],
+	[
+		"scope",
+		"setvar",
+		"foo",
+		{
+			"line": 5,
+			"value": 2
+		},
+		{
+			"line": 5
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM refactor --------------------------------------------------
+[
+	{
+		"frame": true,
+		"fn": "=",
+		"syn": true,
+		"args": ["foo", [{"primitive": 1}]]
+	},
+	{
+		"bwc": "documentation",
+		"args": [[{"primitive": "plain doc text\nacross two lines"}]]
+	},
+	{
+		"frame": true,
+		"fn": "=",
+		"syn": true,
+		"args": ["foo", [{"primitive": 2}]]
+	}
+]
+#--------------------------------------------------------------------
+
+#
+# name: documentation with plain heredoc
+#====================================================================
+
+
+#====================================================================
+# name: vibecode with plain heredoc [ghi]
+# `vibecode <<EOF ... EOF` — same sys-call shape as documentation
+#
+
+#--- code -----------------------------------------------------------
+vibecode <<EOF
+{"role": "example"}
+EOF
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		{
+			"bwc": "vibecode"
+		},
+		{
+			"value": "{\"role\": \"example\"}"
+		},
+		{
+			"line": 1
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM refactor --------------------------------------------------
+[
+	{
+		"bwc": "vibecode",
+		"args": [[{"primitive": "{\"role\": \"example\"}"}]]
+	}
+]
+#--------------------------------------------------------------------
+
+#
+# name: vibecode with plain heredoc
+#====================================================================
+
+
+#====================================================================
+# name: documentation with interpolating-terminator heredoc [ghi]
+# `<<"EOF"` gets the `dq: true` flag as usual; the runtime rule is that documentation ignores it (never interpolates), but the transpiler still emits the flag as source-fidelity
+#
+
+#--- code -----------------------------------------------------------
+documentation <<"EOF"
+literal #{do_not_interpolate}
+EOF
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		{
+			"bwc": "documentation"
+		},
+		{
+			"dq": true,
+			"value": "literal #{do_not_interpolate}"
+		},
+		{
+			"line": 1
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM refactor --------------------------------------------------
+[
+	{
+		"bwc": "documentation",
+		"args": [[{"primitive": "literal #{do_not_interpolate}"}]]
+	}
+]
+#--------------------------------------------------------------------
+
+#
+# name: documentation with interpolating-terminator heredoc
+#====================================================================
+
+
+#====================================================================
+# name: documentation with inline string arg (parens) [ghi]
+# `documentation('inline text')` — no heredoc, just a normal parens-form sys-call
+#
+
+#--- code -----------------------------------------------------------
+documentation('inline text')
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		{
+			"bwc": "documentation"
+		},
+		{
+			"line": 1,
+			"value": "inline text"
+		},
+		{
+			"line": 1
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM refactor --------------------------------------------------
+[
+	{
+		"bwc": "documentation",
+		"args": [[{"primitive": "inline text"}]]
+	}
+]
+#--------------------------------------------------------------------
+
+#
+# name: documentation with inline string arg (parens)
+#====================================================================
+
+
+#====================================================================
+# Heredoc strings
+#====================================================================
+
+
+#====================================================================
+# name: plain heredoc (bare terminator, literal) [ghi]
+#
+
+#--- code -----------------------------------------------------------
+$plain_heredoc = <<EOF
+line one
+line two
+EOF
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		"scope",
+		"setvar",
+		"plain_heredoc",
+		{
+			"value": "line one\nline two"
+		},
+		{
+			"line": 1
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM refactor --------------------------------------------------
+[
+	{
+		"frame": true,
+		"fn": "=",
+		"syn": true,
+		"args": ["plain_heredoc", [{"primitive": "line one\nline two"}]]
+	}
+]
+#--------------------------------------------------------------------
+
+#
+# name: plain heredoc (bare terminator, literal)
+#====================================================================
+
+
+#====================================================================
+# name: typed heredoc [ghi]
+# MIME-type annotation in parens
+#
+
+#--- code -----------------------------------------------------------
+$typed_heredoc = <<('text/markdown')EOF
+# a heading
+regular text
+EOF
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		"scope",
+		"setvar",
+		"typed_heredoc",
+		{
+			"content_type": "text/markdown",
+			"value": "# a heading\nregular text"
+		},
+		{
+			"line": 1
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM refactor --------------------------------------------------
+[
+	{
+		"frame": true,
+		"fn": "=",
+		"syn": true,
+		"args": ["typed_heredoc", [{"primitive": "# a heading\nregular text"}]]
+	}
+]
+#--------------------------------------------------------------------
+
+#
+# name: typed heredoc
+# MIME-type annotation in parens
+#====================================================================
+
+
+#====================================================================
+# name: interpolating heredoc [ghi]
+# <<"EOF" gets the same dq: true flag as a double-quoted string
+#
+
+#--- code -----------------------------------------------------------
+$interp_heredoc = <<"EOF"
+hello, #{$sample}
+tabs \t and newlines \n process here
+EOF
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		"scope",
+		"setvar",
+		"interp_heredoc",
+		{
+			"dq": true,
+			"value": "hello, #{$sample}\ntabs \\t and newlines \\n process here"
+		},
+		{
+			"line": 1
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM refactor --------------------------------------------------
+[
+	{
+		"frame": true,
+		"fn": "=",
+		"syn": true,
+		"args": ["interp_heredoc", [{"primitive": "hello, #{$sample}\ntabs \\t and newlines \\n process here"}]]
+	}
+]
+#--------------------------------------------------------------------
+
+#
+# name: interpolating heredoc
+# <<"EOF" gets the same dq: true flag as a double-quoted string
+#====================================================================
+
+
+#====================================================================
+# name: heredoc with an outdented body line [ghi]
+# least-indented sets the base, only whitespace stripped
+#
+
+#--- code -----------------------------------------------------------
+	$literal_heredoc = <<'EOF'
+	yeah
+  this line is not as indented
+	man
+	EOF
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		"scope",
+		"setvar",
+		"literal_heredoc",
+		{
+			"value": "yeah\n this line is not as indented\nman"
+		},
+		{
+			"line": 1
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM refactor --------------------------------------------------
+[
+	{
+		"frame": true,
+		"fn": "=",
+		"syn": true,
+		"args": ["literal_heredoc", [{"primitive": "yeah\n this line is not as indented\nman"}]]
+	}
+]
+#--------------------------------------------------------------------
+
+#
+# name: heredoc with an outdented body line
+# least-indented sets the base, only whitespace stripped
+#====================================================================
+
+
+#====================================================================
+# name: multiple heredocs threaded through one call [ghi]
+# bodies match openers in order
+#
+
+#--- code -----------------------------------------------------------
+&pair_of_bodies($whole, <<A, $frac, <<B)
+first heredoc body
+A
+second heredoc body
+B
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		{
+			"amp": "pair_of_bodies"
+		},
+		{
+			"line": 1,
+			"var": "whole"
+		},
+		{
+			"value": "first heredoc body"
+		},
+		{
+			"line": 1,
+			"var": "frac"
+		},
+		{
+			"value": "second heredoc body"
+		},
+		{
+			"line": 1
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM refactor --------------------------------------------------
+[
+	{
+		"var": "pair_of_bodies",
+		"fn": "call",
+		"args": [
+			[{"var": "whole"}],
+			[{"primitive": "first heredoc body"}],
+			[{"var": "frac"}],
+			[{"primitive": "second heredoc body"}]
+		]
+	}
+]
+#--------------------------------------------------------------------
+
+#
+# name: multiple heredocs threaded through one call
+# bodies match openers in order
+#====================================================================
+
+
+#====================================================================
+# name: heredoc with terminator string in the middle of a line (not a terminator) [ghi]
+#
+
+#--- code -----------------------------------------------------------
+$literal_heredoc = <<'EOF'
+#{no interpolation} EOF
+and no \n escape processing either
+EOF
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		"scope",
+		"setvar",
+		"literal_heredoc",
+		{
+			"value": "#{no interpolation} EOF\nand no \\n escape processing either"
+		},
+		{
+			"line": 1
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM refactor --------------------------------------------------
+[
+	{
+		"frame": true,
+		"fn": "=",
+		"syn": true,
+		"args": ["literal_heredoc", [{"primitive": "#{no interpolation} EOF\nand no \\n escape processing either"}]]
+	}
+]
+#--------------------------------------------------------------------
+
+#
+# name: heredoc with terminator string in the middle of a line (not a terminator)
+#====================================================================
+
+
+#====================================================================
+# name: multi-heredoc with mixed quoting [ghi]
+# first is dq (interp), second is literal
+#
+
+#--- code -----------------------------------------------------------
+&foo 'x', <<"A", <<'B'
+whatever
+A
+dude
+B
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		{
+			"amp": "foo"
+		},
+		{
+			"line": 1,
+			"value": "x"
+		},
+		{
+			"dq": true,
+			"value": "whatever"
+		},
+		{
+			"value": "dude"
+		},
+		{
+			"line": 1
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM refactor --------------------------------------------------
+[
+	{
+		"var": "foo",
+		"fn": "call",
+		"args": [[{"primitive": "x"}], [{"primitive": "whatever"}], [{"primitive": "dude"}]]
+	}
+]
+#--------------------------------------------------------------------
+
+#
+# name: multi-heredoc with mixed quoting
+# first is dq (interp), second is literal
+#====================================================================
+
+
+#====================================================================
+# name: multi-arg heredoc parens [ghi]
+# kwargs flatten onto the atom next to content_type
+#
+
+#--- code -----------------------------------------------------------
+$literal_heredoc = <<('text/markdown', trim:true)'EOF'
+#{no interpolation} EOF
+and no \n escape processing either
+EOF
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		"scope",
+		"setvar",
+		"literal_heredoc",
+		{
+			"content_type": "text/markdown",
+			"trim": true,
+			"value": "#{no interpolation} EOF\nand no \\n escape processing either"
+		},
+		{
+			"line": 1
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM refactor --------------------------------------------------
+[
+	{
+		"frame": true,
+		"fn": "=",
+		"syn": true,
+		"args": ["literal_heredoc", [{"primitive": "#{no interpolation} EOF\nand no \\n escape processing either"}]]
+	}
+]
+#--------------------------------------------------------------------
+
+#
+# name: multi-arg heredoc parens
+# kwargs flatten onto the atom next to content_type
+#====================================================================
+
+
+#====================================================================
+# name: heredoc parens with only a kwarg (no content_type positional) [ghi]
+#
+
+#--- code -----------------------------------------------------------
+$trimmed = <<(trim:true)EOF
+raw body
+EOF
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		"scope",
+		"setvar",
+		"trimmed",
+		{
+			"trim": true,
+			"value": "raw body"
+		},
+		{
+			"line": 1
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM refactor --------------------------------------------------
+[
+	{
+		"frame": true,
+		"fn": "=",
+		"syn": true,
+		"args": ["trimmed", [{"primitive": "raw body"}]]
+	}
+]
+#--------------------------------------------------------------------
+
+#
+# name: heredoc parens with only a kwarg (no content_type positional)
+#====================================================================
+
+
+# design decisions for Section 19 (heredocs):
+#
+#   Every heredoc produces a plain string value-atom. Heredoc-ness is a
+#   source-syntax convenience — the CaspianJ shape is the same {value: "..."}
+#   that any string literal produces.
+#
+#   Heredoc paren block `<<(ARGS)EOF` parses like a regular function-call
+#   arg list: at most one positional (bound to `content_type`, must be a
+#   quoted string) plus any number of `key: value` kwargs (each value must
+#   be a scalar literal). Kwargs flatten onto the atom next to content_type:
+#     <<('text/markdown')EOF                -> {value: ..., content_type: "text/markdown"}
+#     <<('text/markdown', trim:true)EOF     -> {value: ..., content_type: "text/markdown", trim: true}
+#     <<(trim:true)EOF                      -> {value: ..., trim: true}
+#   A bareword or non-string positional in the paren block raises.
+#
+#   Terminator quoting mirrors regular string quoting:
+#     <<EOF       bare       - literal; no dq flag
+#     <<'EOF'     single     - literal; no dq flag
+#     <<"EOF"     double     - dq: true flag on the atom; runtime does interp + escape
+#   Literal and bare forms produce identical atoms (byte-for-byte body from the
+#   source after indent-stripping, no dq flag). The double-quoted form uses
+#   the same `dq: true` shape as a `"..."` string literal — CaspJ preserves
+#   the source content verbatim and the runtime handles `#{expr}` and escape
+#   sequences.
+#
+#   Indent-stripping rule: the least-indented line (INCLUDING the terminator)
+#   sets the base. That many leading whitespace chars are stripped from every
+#   body line. Only whitespace is stripped — if a line's leading whitespace
+#   is shorter than the base, stripping stops at the first non-whitespace.
+#   Tabs and spaces both count as ONE char each (mixed usage produces a
+#   compile-time warning per the spec — the warning system isn't implemented
+#   yet, so the strip proceeds silently for now).
+#
+#   Terminator matches ONLY on a line whose sole content (after leading
+#   whitespace) is the terminator identifier. A line with the terminator
+#   name in the middle is body content — see the last test case.
+#
+#   Multi-heredoc statement: heredoc openers on a code line are collected
+#   left-to-right; bodies are then consumed from the following lines in
+#   opener-order (first opener gets the first body block, etc.).
+#
+#   Deferred (nice-to-have; no blocker):
+#     - duplicate-terminator-name-per-statement raise
+#     - mixed-tabs-and-spaces compile-time warning (needs the warning system)
+#     - unclosed-heredoc-reaches-EOF raise wording lockdown
+
+#====================================================================
+# Getting setting hash elements
+#====================================================================
+
+
+#====================================================================
+# name: hash element get with string-literal key [ghi]
+#
+
+#--- code -----------------------------------------------------------
+$hash['a']
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		{
+			"var": "hash"
+		},
+		"[]",
+		{
+			"args": [
+				{
+					"line": 1,
+					"value": "a"
+				}
+			]
+		},
+		{
+			"line": 1
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM refactor --------------------------------------------------
+[
+	{
+		"var": "hash",
+		"fn": "[]",
+		"args": [[{"primitive": "a"}]]
+	}
+]
+#--------------------------------------------------------------------
+
+#
+# name: hash element get with string-literal key
+#====================================================================
+
+
+#====================================================================
+# name: hash element get with different string-literal key [ghi]
+#
+
+#--- code -----------------------------------------------------------
+$hash['b']
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		{
+			"var": "hash"
+		},
+		"[]",
+		{
+			"args": [
+				{
+					"line": 1,
+					"value": "b"
+				}
+			]
+		},
+		{
+			"line": 1
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM refactor --------------------------------------------------
+[
+	{
+		"var": "hash",
+		"fn": "[]",
+		"args": [[{"primitive": "b"}]]
+	}
+]
+#--------------------------------------------------------------------
+
+#
+# name: hash element get with different string-literal key
+#====================================================================
+
+
+#====================================================================
+# name: hash element get with variable key [ghi]
+#
+
+#--- code -----------------------------------------------------------
+$hash[$key]
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		{
+			"var": "hash"
+		},
+		"[]",
+		{
+			"args": [
+				{
+					"line": 1,
+					"var": "key"
+				}
+			]
+		},
+		{
+			"line": 1
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM refactor --------------------------------------------------
+[
+	{
+		"var": "hash",
+		"fn": "[]",
+		"args": [[{"var": "key"}]]
+	}
+]
+#--------------------------------------------------------------------
+
+#
+# name: hash element get with variable key
+#====================================================================
+
+
+#====================================================================
+# name: hash element get as RHS of assignment [ghi]
+#
+
+#--- code -----------------------------------------------------------
+$item = $hash['a']
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		"scope",
+		"setvar",
+		"item",
+		[
+			{
+				"line": 1,
+				"var": "hash"
+			},
+			"[]",
+			{
+				"args": [
+					{
+						"line": 1,
+						"value": "a"
+					}
+				],
+				"line": 1
+			}
+		],
+		{
+			"line": 1
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM -----------------------------------------------------------
+[
+	[
+		{
+			"cmd": "="
+		},
+		"item",
+		[
+			{
+				"cmd": "mc"
+			},
+			{
+				"a": [
+					{
+						"v": "a"
+					}
+				],
+				"fn": "[]",
+				"rcvr": {
+					"var": "hash"
+				}
+			}
+		]
+	]
+]
+#--------------------------------------------------------------------
+
+#
+# name: hash element get as RHS of assignment
+#====================================================================
+
+
+#====================================================================
+# name: hash element set with string-literal key (covered by Section 6 already, but tested here as a Section 20 anchor) [ghi]
+#
+
+#--- code -----------------------------------------------------------
+$hash['a'] = 2
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		{
+			"var": "hash"
+		},
+		"[]=",
+		{
+			"args": [
+				{
+					"line": 1,
+					"value": "a"
+				},
+				{
+					"line": 1,
+					"value": 2
+				}
+			]
+		},
+		{
+			"line": 1
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM refactor --------------------------------------------------
+[
+	{
+		"var": "hash",
+		"fn": "[]=",
+		"args": [[{"primitive": "a"}], [{"primitive": 2}]]
+	}
+]
+#--------------------------------------------------------------------
+
+#
+# name: hash element set with string-literal key (covered by Section 6 already, but tested here as a Section 20 anchor)
+#====================================================================
+
+
+#====================================================================
+# name: hash element set with variable key, literal value [ghi]
+#
+
+#--- code -----------------------------------------------------------
+$hash[$key] = 2
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		{
+			"var": "hash"
+		},
+		"[]=",
+		{
+			"args": [
+				{
+					"line": 1,
+					"var": "key"
+				},
+				{
+					"line": 1,
+					"value": 2
+				}
+			]
+		},
+		{
+			"line": 1
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM refactor --------------------------------------------------
+[
+	{
+		"var": "hash",
+		"fn": "[]=",
+		"args": [[{"var": "key"}], [{"primitive": 2}]]
+	}
+]
+#--------------------------------------------------------------------
+
+#
+# name: hash element set with variable key, literal value
+#====================================================================
+
+
+#====================================================================
+# name: hash element set with variable key and variable value [ghi]
+#
+
+#--- code -----------------------------------------------------------
+$hash[$key] = $val
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		{
+			"var": "hash"
+		},
+		"[]=",
+		{
+			"args": [
+				{
+					"line": 1,
+					"var": "key"
+				},
+				{
+					"line": 1,
+					"var": "val"
+				}
+			]
+		},
+		{
+			"line": 1
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM refactor --------------------------------------------------
+[
+	{
+		"var": "hash",
+		"fn": "[]=",
+		"args": [[{"var": "key"}], [{"var": "val"}]]
+	}
+]
+#--------------------------------------------------------------------
+
+#
+# name: hash element set with variable key and variable value
+#====================================================================
+
+
+#====================================================================
+# name: nested-container get via multi-key subscript (also covered in Section 28) [ghi]
+#
+
+#--- code -----------------------------------------------------------
+$hash['a', 1, 'b']
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		{
+			"var": "hash"
+		},
+		"[]",
+		{
+			"args": [
+				{
+					"line": 1,
+					"value": "a"
+				},
+				{
+					"line": 1,
+					"value": 1
+				},
+				{
+					"line": 1,
+					"value": "b"
+				}
+			]
+		},
+		{
+			"line": 1
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM refactor --------------------------------------------------
+[
+	{
+		"var": "hash",
+		"fn": "[]",
+		"args": [[{"primitive": "a"}], [{"primitive": 1}], [{"primitive": "b"}]]
+	}
+]
+#--------------------------------------------------------------------
+
+#
+# name: nested-container get via multi-key subscript (also covered in Section 28)
+#====================================================================
+
+
+#====================================================================
+# name: nested-container set via multi-key subscript with mixed literal / variable keys [ghi]
+#
+
+#--- code -----------------------------------------------------------
+$hash['a', $foo, 'b'] = 'bar'
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		{
+			"var": "hash"
+		},
+		"[]=",
+		{
+			"args": [
+				{
+					"line": 1,
+					"value": "a"
+				},
+				{
+					"line": 1,
+					"var": "foo"
+				},
+				{
+					"line": 1,
+					"value": "b"
+				},
+				{
+					"line": 1,
+					"value": "bar"
+				}
+			]
+		},
+		{
+			"line": 1
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM refactor --------------------------------------------------
+[
+	{
+		"var": "hash",
+		"fn": "[]=",
+		"args": [[{"primitive": "a"}], [{"var": "foo"}], [{"primitive": "b"}], [{"primitive": "bar"}]]
+	}
+]
+#--------------------------------------------------------------------
+
+#
+# name: nested-container set via multi-key subscript with mixed literal / variable keys
+#====================================================================
+
+
+# design decisions made unilaterally for Section 20:
+#
+#   - hash element get is a bare "[]" method call: same three-element shape
+#     as the assignment form, minus the value in the args.
+#   - variable keys parse to {var: name}, same as anywhere else.
+
+#====================================================================
+# Getting setting array elements
+#====================================================================
+
+
+#====================================================================
+# name: array element get with integer-literal index [ghi]
+#
+
+#--- code -----------------------------------------------------------
+$array[0]
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		{
+			"var": "array"
+		},
+		"[]",
+		{
+			"args": [
+				{
+					"line": 1,
+					"value": 0
+				}
+			]
+		},
+		{
+			"line": 1
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM refactor --------------------------------------------------
+[
+	{
+		"var": "array",
+		"fn": "[]",
+		"args": [[{"primitive": 0}]]
+	}
+]
+#--------------------------------------------------------------------
+
+#
+# name: array element get with integer-literal index
+#====================================================================
+
+
+#====================================================================
+# name: array element get with negative integer index [ghi]
+#
+
+#--- code -----------------------------------------------------------
+$array[-1]
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		{
+			"var": "array"
+		},
+		"[]",
+		{
+			"args": [
+				{
+					"line": 1,
+					"value": -1
+				}
+			]
+		},
+		{
+			"line": 1
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM refactor --------------------------------------------------
+[
+	{
+		"var": "array",
+		"fn": "[]",
+		"args": [[{"primitive": -1}]]
+	}
+]
+#--------------------------------------------------------------------
+
+#
+# name: array element get with negative integer index
+#====================================================================
+
+
+#====================================================================
+# name: array element get with negative zero (last element [ghi]
+# -0 is
+#
+
+#--- code -----------------------------------------------------------
+$array[-0]
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		{
+			"var": "array"
+		},
+		"[]",
+		{
+			"args": [
+				{
+					"line": 1,
+					"neg_zero": true,
+					"value": 0
+				}
+			]
+		},
+		{
+			"line": 1
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM refactor --------------------------------------------------
+[
+	{
+		"var": "array",
+		"fn": "[]",
+		"args": [[{"primitive": 0, "neg_zero": true}]]
+	}
+]
+#--------------------------------------------------------------------
+
+#
+# name: array element get with negative zero (last element
+# -0 is
+#====================================================================
+
+
+#====================================================================
+# name: array element get as RHS of assignment [ghi]
+#
+
+#--- code -----------------------------------------------------------
+$first = $array[0]
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		"scope",
+		"setvar",
+		"first",
+		[
+			{
+				"line": 1,
+				"var": "array"
+			},
+			"[]",
+			{
+				"args": [
+					{
+						"line": 1,
+						"value": 0
+					}
+				],
+				"line": 1
+			}
+		],
+		{
+			"line": 1
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM -----------------------------------------------------------
+[
+	[
+		{
+			"cmd": "="
+		},
+		"first",
+		[
+			{
+				"cmd": "mc"
+			},
+			{
+				"a": [
+					{
+						"v": 0
+					}
+				],
+				"fn": "[]",
+				"rcvr": {
+					"var": "array"
+				}
+			}
+		]
+	]
+]
+#--------------------------------------------------------------------
+
+#
+# name: array element get as RHS of assignment
+#====================================================================
+
+
+#====================================================================
+# name: array element set with integer-literal index [ghi]
+#
+
+#--- code -----------------------------------------------------------
+$array[0] = 2
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		{
+			"var": "array"
+		},
+		"[]=",
+		{
+			"args": [
+				{
+					"line": 1,
+					"value": 0
+				},
+				{
+					"line": 1,
+					"value": 2
+				}
+			]
+		},
+		{
+			"line": 1
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM refactor --------------------------------------------------
+[
+	{
+		"var": "array",
+		"fn": "[]=",
+		"args": [[{"primitive": 0}], [{"primitive": 2}]]
+	}
+]
+#--------------------------------------------------------------------
+
+#
+# name: array element set with integer-literal index
+#====================================================================
+
+
+#====================================================================
+# name: array element set with negative integer index [ghi]
+#
+
+#--- code -----------------------------------------------------------
+$array[-1] = 99
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		{
+			"var": "array"
+		},
+		"[]=",
+		{
+			"args": [
+				{
+					"line": 1,
+					"value": -1
+				},
+				{
+					"line": 1,
+					"value": 99
+				}
+			]
+		},
+		{
+			"line": 1
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM refactor --------------------------------------------------
+[
+	{
+		"var": "array",
+		"fn": "[]=",
+		"args": [[{"primitive": -1}], [{"primitive": 99}]]
+	}
+]
+#--------------------------------------------------------------------
+
+#
+# name: array element set with negative integer index
+#====================================================================
+
+
+#====================================================================
+# name: array push (paren-less method call) [ghi]
+#
+
+#--- code -----------------------------------------------------------
+$array.push 'bar'
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		{
+			"args": [
+				{
+					"line": 1,
+					"value": "bar"
+				}
+			],
+			"left": {
+				"var": "array"
+			},
+			"line": 1,
+			"op": ".",
+			"right": "push"
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM refactor --------------------------------------------------
+[
+	{
+		"var": "array",
+		"fn": "push",
+		"args": [[{"primitive": "bar"}]]
+	}
+]
+#--------------------------------------------------------------------
+
+#
+# name: array push (paren-less method call)
+#====================================================================
+
+
+# design decisions made unilaterally for Section 21:
+#
+#   - array element get / set share the "[]" and "[]=" method-name shapes
+#     with hash (Section 20). the runtime dispatches on receiver type;
+#     the shape is uniform.
+#   - negative integer indices parse via the existing parse_number path
+#     ({value: -1}). the runtime's array-wrap semantics are its concern.
+#   - `$array[-0]` — `-0` is preserved as `{value: 0, neg_zero: true}` so
+#     the runtime's last-element dispatch can distinguish it from `{value: 0}`.
+#     Fixture directly above; Section 3's "negative zero" test covers the
+#     literal-form side.
+
+#====================================================================
+# Bare word commands
+#====================================================================
+
+
+# design decision needed from Miko before this section can land tests:
+#
+#   what does an undecorated identifier at statement position mean?
+#     - foo 'bar'      — a bare-word command (like &foo 'bar' without the &)? no
+#     - foo('bar')     — same, with parens? yes
+#     - $j = foo + bar — foo and bar as variable references without $?
+#
+# option (a): reserve bare identifiers for bare-word commands. that conflicts
+# with the current $-sigil discipline everywhere else. option (b): reserve
+# them for local variables (a la Ruby / Python). option (c): keep the current
+# spec (undecorated identifier at statement start is a syntax error) and
+# force the & or $ sigil for disambiguation. Miko decides.
+
+# Response: bare word commands are not like regular "&" commands.
+# See the docs on DSL for what they are. They should be preserved
+# in Caspj as bare word commands.
+#
+# Statement position: `foo 'bar'` and `foo('bar')` both produce the
+# bwc-call shape `[{bwc: "foo"}, {value: "bar"}]` (same as with kwargs
+# in Section 12). Expression position: a bare identifier transpiles to
+# a `{bwc: name}` atom — same atom the statement form emits, just used
+# as a value.
+
+#====================================================================
+# name: bareword-command call at statement position (paren-less form) [ghi]
+#
+
+#--- code -----------------------------------------------------------
+foo 'bar'
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		{
+			"bwc": "foo"
+		},
+		{
+			"line": 1,
+			"value": "bar"
+		},
+		{
+			"line": 1
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM refactor --------------------------------------------------
+[
+	{
+		"bwc": "foo",
+		"args": [[{"primitive": "bar"}]]
+	}
+]
+#--------------------------------------------------------------------
+
+#
+# name: bareword-command call at statement position (paren-less form)
+#====================================================================
+
+
+#====================================================================
+# name: bareword-command call at statement position (parens form) [ghi]
+#
+
+#--- code -----------------------------------------------------------
+foo('bar')
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		{
+			"bwc": "foo"
+		},
+		{
+			"line": 1,
+			"value": "bar"
+		},
+		{
+			"line": 1
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM refactor --------------------------------------------------
+[
+	{
+		"bwc": "foo",
+		"args": [[{"primitive": "bar"}]]
+	}
+]
+#--------------------------------------------------------------------
+
+#
+# name: bareword-command call at statement position (parens form)
+#====================================================================
+
+
+#====================================================================
+# name: bare identifier at expression position [ghi]
+# `{bwc: name}` atom
+#
+
+#--- code -----------------------------------------------------------
+$j = foo + bar
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		"scope",
+		"setvar",
+		"j",
+		{
+			"left": {
+				"bwc": "foo",
+				"line": 1
+			},
+			"line": 1,
+			"op": "+",
+			"right": {
+				"bwc": "bar",
+				"line": 1
+			}
+		},
+		{
+			"line": 1
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM refactor --------------------------------------------------
+[
+	{
+		"frame": true,
+		"fn": "=",
+		"syn": true,
+		"args": [
+			"j",
+			[
+				{
+					"bwc": "foo",
+					"fn": "+",
+					"syn": true,
+					"args": [[{"bwc": "bar"}]]
+				}
+			]
+		]
+	}
+]
+#--------------------------------------------------------------------
+
+#
+# name: bare identifier at expression position
+# `{bwc: name}` atom
+#====================================================================
+
+
+#====================================================================
+# Method chains
+#====================================================================
+
+
+#====================================================================
+# name: chained attribute access (2 segments) [ghi]
+#
+
+#--- code -----------------------------------------------------------
+$foo.bar.gup
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		{
+			"left": {
+				"left": {
+					"line": 1,
+					"var": "foo"
+				},
+				"line": 1,
+				"op": ".",
+				"right": "bar"
+			},
+			"line": 1,
+			"op": ".",
+			"right": "gup"
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM refactor --------------------------------------------------
+[{"var": "foo", "fn": "bar"}, {"rv": true, "fn": "gup"}]
+#--------------------------------------------------------------------
+
+#
+# name: chained attribute access (2 segments)
+#====================================================================
+
+
+#====================================================================
+# name: chained attribute access (3 segments) [ghi]
+#
+
+#--- code -----------------------------------------------------------
+$foo.bar.gup.baz
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		{
+			"left": {
+				"left": {
+					"left": {
+						"line": 1,
+						"var": "foo"
+					},
+					"line": 1,
+					"op": ".",
+					"right": "bar"
+				},
+				"line": 1,
+				"op": ".",
+				"right": "gup"
+			},
+			"line": 1,
+			"op": ".",
+			"right": "baz"
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM refactor --------------------------------------------------
+[{"var": "foo", "fn": "bar"}, {"rv": true, "fn": "gup"}, {"rv": true, "fn": "baz"}]
+#--------------------------------------------------------------------
+
+#
+# name: chained attribute access (3 segments)
+#====================================================================
+
+
+#====================================================================
+# name: multi-line method chain [ghi]
+# leading-dot continuation, mixed .method() and .attr segments
+#
+
+#--- code -----------------------------------------------------------
+$foo.bar()
+	.gup('baz')
+	.baz
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		{
+			"left": {
+				"args": [
+					{
+						"line": 1,
+						"value": "baz"
+					}
+				],
+				"left": {
+					"left": {
+						"line": 1,
+						"var": "foo"
+					},
+					"line": 1,
+					"op": ".",
+					"right": "bar"
+				},
+				"line": 1,
+				"op": ".",
+				"right": "gup"
+			},
+			"line": 1,
+			"op": ".",
+			"right": "baz"
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM refactor --------------------------------------------------
+[
+	{"var": "foo", "fn": "bar"},
+	{
+		"rv": true,
+		"fn": "gup",
+		"args": [[{"primitive": "baz"}]]
+	},
+	{"rv": true, "fn": "baz"}
+]
+#--------------------------------------------------------------------
+
+#
+# name: multi-line method chain
+# leading-dot continuation, mixed .method() and .attr segments
+#====================================================================
+
+
+#====================================================================
+# name: chained attribute access as RHS of assignment [ghi]
+#
+
+#--- code -----------------------------------------------------------
+$x = $foo.bar.gup
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		"scope",
+		"setvar",
+		"x",
+		{
+			"left": {
+				"left": {
+					"line": 1,
+					"var": "foo"
+				},
+				"line": 1,
+				"op": ".",
+				"right": "bar"
+			},
+			"line": 1,
+			"op": ".",
+			"right": "gup"
+		},
+		{
+			"line": 1
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM refactor --------------------------------------------------
+[
+	{
+		"frame": true,
+		"fn": "=",
+		"syn": true,
+		"args": ["x", [{"var": "foo", "fn": "bar"}, {"rv": true, "fn": "gup"}]]
+	}
+]
+#--------------------------------------------------------------------
+
+#
+# name: chained attribute access as RHS of assignment
+#====================================================================
+
+
+#====================================================================
+# name: chained attribute assignment (single segment; identical to Section 6 case, re-anchored here) [ghi]
+#
+
+#--- code -----------------------------------------------------------
+$obj.name = 'alice'
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		{
+			"args": [
+				{
+					"line": 1,
+					"value": "alice"
+				}
+			],
+			"left": {
+				"line": 1,
+				"var": "obj"
+			},
+			"line": 1,
+			"op": ".",
+			"right": "name="
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM refactor --------------------------------------------------
+[
+	{
+		"var": "obj",
+		"fn": "name=",
+		"args": [[{"primitive": "alice"}]]
+	}
+]
+#--------------------------------------------------------------------
+
+#
+# name: chained attribute assignment (single segment; identical to Section 6 case, re-anchored here)
+#====================================================================
+
+
+#====================================================================
+# name: chained attribute assignment (three segments) [ghi]
+#
+
+#--- code -----------------------------------------------------------
+$foo.bar.gup.baz = 'bear'
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		{
+			"args": [
+				{
+					"line": 1,
+					"value": "bear"
+				}
+			],
+			"left": {
+				"left": {
+					"left": {
+						"line": 1,
+						"var": "foo"
+					},
+					"line": 1,
+					"op": ".",
+					"right": "bar"
+				},
+				"line": 1,
+				"op": ".",
+				"right": "gup"
+			},
+			"line": 1,
+			"op": ".",
+			"right": "baz="
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM refactor --------------------------------------------------
+[
+	{"var": "foo", "fn": "bar"},
+	{"rv": true, "fn": "gup"},
+	{
+		"rv": true,
+		"fn": "baz=",
+		"args": [[{"primitive": "bear"}]]
+	}
+]
+#--------------------------------------------------------------------
+
+#
+# name: chained attribute assignment (three segments)
+#====================================================================
+
+
+#====================================================================
+# name: chained attribute assignment (two segments, variable value) [ghi]
+#
+
+#--- code -----------------------------------------------------------
+$foo.bar.gup = $value
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		{
+			"args": [
+				{
+					"line": 1,
+					"var": "value"
+				}
+			],
+			"left": {
+				"left": {
+					"line": 1,
+					"var": "foo"
+				},
+				"line": 1,
+				"op": ".",
+				"right": "bar"
+			},
+			"line": 1,
+			"op": ".",
+			"right": "gup="
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM refactor --------------------------------------------------
+[
+	{"var": "foo", "fn": "bar"},
+	{
+		"rv": true,
+		"fn": "gup=",
+		"args": [[{"var": "value"}]]
+	}
+]
+#--------------------------------------------------------------------
+
+#
+# name: chained attribute assignment (two segments, variable value)
+#====================================================================
+
+
+# design decisions made unilaterally for Section 23:
+#
+#   - chained attribute access is left-associative: $foo.bar.gup is
+#     [[{var:foo},bar],gup]. reads as "get bar off foo, then get gup off that."
+#   - chained attribute assignment: the receiver of the setter is the chain
+#     of everything up to and NOT including the last segment, applied
+#     recursively; the setter's method name is the final segment plus "=".
+#     e.g. $a.b.c.d = X → [[[{var:a},b],c], "d=", {args: [X]}]
+#   - shape same as the single-segment case (Section 6) when there's only
+#     one segment.
+#
+# method-call-inside-a-chain (get form) now handled by the multi-step chain
+# walker in transpile_statement — `$foo.bar.gup(1)` walks left-to-right,
+# wrapping each `.name` and `.name(args)` segment. See Section 23's
+# "multi-line method chain" fixture for the shape. The assignment-to-
+# chain-with-call form `$foo.bar.gup(1) = 2` is still unsupported — assigning
+# to the return value of a method call has no obvious semantics.
+
+#====================================================================
+# Variable objects
+#====================================================================
+
+
+#====================================================================
+# name: variable object as bare statement [ghi]
+#
+
+#--- code -----------------------------------------------------------
+$$foo
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		{
+			"line": 1,
+			"varobj": "foo"
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM -----------------------------------------------------------
+[
+	[
+		{
+			"vo": "foo"
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#
+# name: variable object as bare statement
+#====================================================================
+
+
+#====================================================================
+# name: variable object property assignment [ghi]
+#
+
+#--- code -----------------------------------------------------------
+$$foo.value = 'bar'
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		{
+			"args": [
+				{
+					"line": 1,
+					"value": "bar"
+				}
+			],
+			"left": {
+				"line": 1,
+				"varobj": "foo"
+			},
+			"line": 1,
+			"op": ".",
+			"right": "value="
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM -----------------------------------------------------------
+[
+	[
+		[
+			{
+				"cmd": "mc"
+			},
+			{
+				"a": [
+					{
+						"v": "bar"
+					}
+				],
+				"fn": "value=",
+				"rcvr": {
+					"vo": "foo"
+				}
+			}
+		]
+	]
+]
+#--------------------------------------------------------------------
+
+#
+# name: variable object property assignment
+#====================================================================
+
+
+#====================================================================
+# name: variable object property access [ghi]
+#
+
+#--- code -----------------------------------------------------------
+$$foo.value
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		{
+			"left": {
+				"line": 1,
+				"varobj": "foo"
+			},
+			"line": 1,
+			"op": ".",
+			"right": "value"
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM -----------------------------------------------------------
+[
+	[
+		[
+			{
+				"cmd": "mc"
+			},
+			{
+				"fn": "value",
+				"rcvr": {
+					"vo": "foo"
+				}
+			}
+		]
+	]
+]
+#--------------------------------------------------------------------
+
+#
+# name: variable object property access
+#====================================================================
+
+
+#====================================================================
+# name: variable object as RHS of assignment [ghi]
+#
+
+#--- code -----------------------------------------------------------
+$meta = $$foo
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		"scope",
+		"setvar",
+		"meta",
+		{
+			"line": 1,
+			"varobj": "foo"
+		},
+		{
+			"line": 1
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM -----------------------------------------------------------
+[
+	[
+		{
+			"cmd": "="
+		},
+		"meta",
+		{
+			"vo": "foo"
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#
+# name: variable object as RHS of assignment
+#====================================================================
+
+
+#====================================================================
+# name: variable object property access as RHS [ghi]
+#
+
+#--- code -----------------------------------------------------------
+$v = $$foo.value
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		"scope",
+		"setvar",
+		"v",
+		{
+			"left": {
+				"line": 1,
+				"varobj": "foo"
+			},
+			"line": 1,
+			"op": ".",
+			"right": "value"
+		},
+		{
+			"line": 1
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM -----------------------------------------------------------
+[
+	[
+		{
+			"cmd": "="
+		},
+		"v",
+		[
+			{
+				"cmd": "mc"
+			},
+			{
+				"fn": "value",
+				"rcvr": {
+					"vo": "foo"
+				}
+			}
+		]
+	]
+]
+#--------------------------------------------------------------------
+
+#
+# name: variable object property access as RHS
+#====================================================================
+
+
+#====================================================================
+# name: variable object multi-segment attribute chain [ghi]
+#
+
+#--- code -----------------------------------------------------------
+$$foo.a.b
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		{
+			"left": {
+				"left": {
+					"line": 1,
+					"varobj": "foo"
+				},
+				"line": 1,
+				"op": ".",
+				"right": "a"
+			},
+			"line": 1,
+			"op": ".",
+			"right": "b"
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM -----------------------------------------------------------
+[
+	[
+		[
+			{
+				"cmd": "mc"
+			},
+			{
+				"fn": "b",
+				"rcvr": [
+					{
+						"cmd": "mc"
+					},
+					{
+						"fn": "a",
+						"rcvr": {
+							"vo": "foo"
+						}
+					}
+				]
+			}
+		]
+	]
+]
+#--------------------------------------------------------------------
+
+#
+# name: variable object multi-segment attribute chain
+#====================================================================
+
+
+# design decisions made unilaterally for Section 24:
+#
+#   - varobj atom shape: {varobj: "name"} — parallel to {var: "name"}.
+#     JSON key kept as a plain identifier (not "$$") so it's addressable
+#     from clients that can't emit special JSON keys.
+#   - $$name is tried BEFORE $name in the receiver-recognition helper, since
+#     the plain-var pattern would gobble the first $ and misparse the second.
+#   - $$name in expression AND statement position both work; $$name.attr and
+#     $$name.attr = value use the same receiver-swap approach as $-var
+#     receivers.
+#
+# Reassigning the varobj slot itself (`$$foo = X`) is NOT valid Caspian —
+# a varobj IS the slot; there is no "replace the varobj with a different
+# one" operation. The parser catches this at transpile time with a specific
+# error steering the author toward `$foo = X` (which reassigns the value
+# the slot holds). Negative fixture: parse-negative.casp § `varobj-slot
+# reassignment ($$foo = X) raises with steering hint`.

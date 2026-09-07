@@ -1,7 +1,7 @@
 --[[
 {
 	"module":  "caspj-caspm",
-	"role":    "CaspJ -> CaspM. Rewrites the transpiler's self-documenting form into the compact shape the engine walks: EVERY command collapses to the method_call shape `[{cmd: 'mc'}, {fn, rcvr, args?, kw?, blocks?, syn?}]`. Assignment is a method_call with `fn: '='` and `rcvr: {sys: 'frame'}` (implicit receiver — the current frame); dot-method calls carry the source-level receiver; binops are `fn: OP, rcvr: left, args: [right]`; unary ops are `fn: OP, rcvr: operand`. The envelope's `syn: true` marker records that the mc came from syntactic sugar (operator forms, setvar, setat, amp / bwc, @-read) rather than a directly-written `.method()` call — readers use it for source-aware error messages and pretty-printing. Bareword-command atoms (`{bwc: name}`) collapse to `{fn:'call', rcvr:{var:name}, syn:true}`. Amp atoms (`{amp: X}`) do too; when the amp target is a dot chain, the sigil pushes down to the leftmost leaf so `&foo.bar` transpiles as `(&foo).bar`. Compact key rewrites (line -> l, value -> v, body -> bd, params -> pm, closure -> cl, fetch -> ft, array -> ar, varobj -> vo, begin_end -> be). Drops comment atoms, documentation / vibecode BWC rows, cosmetic `base` / `dq` flags, and trailing sole-`line` statement-position line metas. Pipe operators (`{op: '|'}` / `{op: '|&'}`) desugar to nested calls first.",
+	"role":    "CaspJ -> CaspM. Rewrites the transpiler's self-documenting form into the compact shape the engine walks: EVERY command collapses to the method_call shape `[{cmd: 'mc'}, {fn, rcvr, args?, kw?, blocks?, syn?}]`. Assignment is a method_call with `fn: '='` and `rcvr: {context: 'frame'}` (implicit receiver — the current frame); dot-method calls carry the source-level receiver; binops are `fn: OP, rcvr: left, args: [right]`; unary ops are `fn: OP, rcvr: operand`. The envelope's `syn: true` marker records that the mc came from syntactic sugar (operator forms, setvar, setat, amp / bwc, @-read) rather than a directly-written `.method()` call — readers use it for source-aware error messages and pretty-printing. Bareword-command atoms (`{bwc: name}`) collapse to `{fn:'call', rcvr:{var:name}, syn:true}`. Amp atoms (`{amp: X}`) do too; when the amp target is a dot chain, the sigil pushes down to the leftmost leaf so `&foo.bar` transpiles as `(&foo).bar`. Compact key rewrites (line -> l, value -> v, body -> bd, params -> pm, closure -> cl, fetch -> ft, array -> ar, varobj -> vo, begin_end -> be). Drops comment atoms, documentation / vibecode BWC rows, cosmetic `base` / `dq` flags, and trailing sole-`line` statement-position line metas. Pipe operators (`{op: '|'}` / `{op: '|&'}`) desugar to nested calls first.",
 	"exports": {
 		"transpile": "CaspM (Lua table) -> CaspM (Lua table) — CaspM variant. Input is not mutated; output is a fresh table."
 	}
@@ -30,9 +30,9 @@ drop-me values.
 
 - **Every command is a method_call.** The engine walks one row
   shape: `[{cmd: 'mc'}, {fn, rcvr, args?, kw?, blocks?, l?}]`.
-  Assignment (`$x = 1`) becomes `[{cmd: 'mc'}, {fn: '=', rcvr: {sys:
+  Assignment (`$x = 1`) becomes `[{cmd: 'mc'}, {fn: '=', rcvr: {context:
   'frame'}, args: ['x', {v: 1}]}]` — the receiver is the current frame,
-  named via the `sys` system-reference atom, resolved to
+  named via the `context` system-reference atom, resolved to
   `engine.current_frame_pk` at dispatch time. Amp-call rows,
   dot-method rows, and binops all collapse to the same shape.
   Sugared forms (`unless_end`, `until_end`, postinc,
@@ -68,7 +68,7 @@ local desugar_pipe
 
 -- Compact-key rename map: CaspJ atom key -> CaspM atom key. Applied inside
 -- object atoms by transpile_atom's generic-object branch. Structural keys
--- (`var`, `hash`, `kw`, `blocks`, `at`, `sys`, `fn`, `rcvr`, `pattern`,
+-- (`var`, `hash`, `kw`, `blocks`, `at`, `context`, `fn`, `rcvr`, `pattern`,
 -- `flags`, `rx`, `cond`, `meta`, `bwc`, ...) stay as-is because they're
 -- already terse or too structurally load-bearing to rename.
 local KEY_MAP = {
@@ -385,7 +385,7 @@ transpile_atom = function(v)
 			if v[2] == "setvar" and type(v[3]) == "string" then
 				-- [scope, setvar, name, RHS, ...trailing metas]. Collapses
 				-- to a method_call on the current frame: fn='=', rc=current
-				-- frame (named via {sys: 'frame'}), args = [name, RHS].
+				-- frame (named via {context: 'frame'}), args = [name, RHS].
 				-- Keep a trailing sole-line meta iff the RHS's interior
 				-- mentions a different line (multi-line RHS like `$x =
 				-- begin ... end`); drop it for single-line RHS. `syn=true`
@@ -394,7 +394,7 @@ transpile_atom = function(v)
 				local rhs = transpile_sub(v[4])
 				local envelope = {
 					fn = "=",
-					rcvr = {sys = "frame"},
+					rcvr = {context = "frame"},
 					args = {v[3], rhs},
 					syn = true,
 				}
@@ -422,7 +422,7 @@ transpile_atom = function(v)
 					{["cmd"] = "mc"},
 					{
 						fn = "=",
-						rcvr = {sys = "frame"},
+						rcvr = {context = "frame"},
 						args = {name, {{["cmd"] = "mc"}, op_call}},
 						syn = true,
 					},
@@ -432,7 +432,7 @@ transpile_atom = function(v)
 			if v[2] == "setat" and type(v[3]) == "string" then
 				-- [scope, setat, name, RHS]. `@name = X` is sugar for
 				-- `%bucket[name] = X`; CaspM rewrites to the corresponding
-				-- `[]=` call on the sys bucket. `syn=true` records the
+				-- `[]=` call on the context bucket. `syn=true` records the
 				-- setat-sugar origin.
 				local name = v[3]
 				local rhs = transpile_sub(v[4])
@@ -441,7 +441,7 @@ transpile_atom = function(v)
 					{["cmd"] = "mc"},
 					{
 						fn = "[]=",
-						rcvr = {sys = "bucket"},
+						rcvr = {context = "bucket"},
 						args = {{v = name}, rhs},
 						syn = true,
 					},
@@ -599,7 +599,7 @@ transpile_atom = function(v)
 	-- Object atom.
 
 	-- At-sigil atom `{at: NAME}` — `@name` is sugar for `%bucket['name']`;
-	-- CaspM rewrites to the corresponding `[]` (get) call on the sys
+	-- CaspM rewrites to the corresponding `[]` (get) call on the context
 	-- bucket. Fires for read positions; the write case (`@name = X`)
 	-- is handled at the row-level setat collapse. `syn=true` on the
 	-- envelope (@-sigil is sugar for the `[]` call).
@@ -608,7 +608,7 @@ transpile_atom = function(v)
 			{["cmd"] = "mc"},
 			{
 				fn = "[]",
-				rcvr = {sys = "bucket"},
+				rcvr = {context = "bucket"},
 				args = {{v = v.at}},
 				syn = true,
 			},
@@ -660,7 +660,7 @@ transpile_atom = function(v)
 			{["cmd"] = "mc"},
 			{
 				fn = "=",
-				rcvr = {sys = "frame"},
+				rcvr = {context = "frame"},
 				args = {inner.name, transpile_sub(inner.value)},
 				syn = true,
 			},

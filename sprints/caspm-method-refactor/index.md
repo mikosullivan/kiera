@@ -13,13 +13,13 @@ Sprint for reshaping the CaspM into a flat step-list form.
 
 ## Working files
 
-- [parse.casp](parse.casp) — snapshot of the production transpiler fixture corpus. Iterate on shape choices against real examples here.
+- [tests/examples/](tests/examples/) — sprint's fixture corpus, split by category: `parse.casp` (core syntax), `loops.casp` (while/until/begin-while/`.each`), `if.casp` (if/elsif/else/unless). Iterate on shape choices against real examples here; the test runner picks up every `*.casp` file in the directory.
 
 ## Design so far
 
 - Frame ast becomes a flat list of steps (no outer statement-array wrapping).
 - Two step kinds share a shape but differ by which keys they carry:
-  - **Value step:** exactly one atom-key at top level (`scalar`, `var`, `sys`, `at`, `class`, ...); no `fn`. Produces a value into rv.
+  - **Value step:** exactly one atom-key at top level (`scalar`, `var`, `context`, `at`, `class`, ...); no `fn`. Produces a value into rv.
   - **Dispatch step:** `fn: NAME`; receiver source is either `rv:true` (chain from previous step's rv) or `rcvr: {atom}` (inline receiver — still on the table for compact-form dispatches).
 - Every step sets rv.
 - Args are closures — nested step-lists (form TBD for single-step args).
@@ -27,7 +27,7 @@ Sprint for reshaping the CaspM into a flat step-list form.
 
 ## Open questions
 
-- **Atom keys top-level vs `rcvr:` wrapper.** Miko's lean: top-level (matches existing atom convention `{v:X}`/`{var:X}`/`{sys:X}` throughout CaspM). Perf negligible; consistency wins.
+- **Atom keys top-level vs `rcvr:` wrapper.** Miko's lean: top-level (matches existing atom convention `{v:X}`/`{var:X}`/`{context:X}` throughout CaspM). Perf negligible; consistency wins.
 - **When a receiver combines with a dispatch on one step.** Is `{var:"foo", fn:"bar"}` a single combined step, or must it decompose to `[{var:"foo"}, {rv:true, fn:"bar"}]`? Strict split (always two steps) is more uniform; combined form is more compact for lookup atoms.
 - **Arg shape.** Is a single-step arg a bare hash `{var:"x"}` or wrapped `[{var:"x"}]`? Uniform wrapping vs compact single-step form.
 - **Statement boundaries.** In the flat model, do multiple commands cluster within one frame's ast (with implicit boundaries at atom-steps that reset rv), or spawn separate frames?
