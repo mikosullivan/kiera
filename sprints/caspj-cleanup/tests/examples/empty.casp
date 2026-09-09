@@ -1,0 +1,63 @@
+#!/usr/bin/caspian
+
+vibecode <<EOF
+{
+	"doc":    "test_cases_parsing_empty",
+	"role":   "sibling of parse.casp holding fixtures whose source is either an empty program or comment-only (nothing runs at runtime). Split out to keep parse.casp focused on syntactic constructs that actually produce something. Same fixture format (boxed by `#===...` outer borders, sections `#--- code ---` / `#--- CaspJ ---` / `#--- CaspM ---` or `#--- CaspM refactor ---`), read by the same parse-extract module.",
+	"status": "growing; add here when a new fixture demonstrates code-that-does-nothing (empty source, whitespace-only, comment-only)"
+}
+EOF
+
+#====================================================================
+# Empty and comment-only programs
+#====================================================================
+
+
+#====================================================================
+# name: empty program [ghi]
+#
+
+#--- Caspian -----------------------------------------------------------
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+
+#--------------------------------------------------------------------
+
+#
+# name: empty program
+#====================================================================
+
+
+#====================================================================
+# name: comment-only line [ghi]
+#
+
+#--- Caspian -----------------------------------------------------------
+# Line comment on its own line.
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+
+#--------------------------------------------------------------------
+
+#
+# name: comment-only line
+#====================================================================
+
+
+#====================================================================
+# name: empty comment (bare hash) on its own line [ghi]
+#
+
+#--- Caspian -----------------------------------------------------------
+#
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+
+#--------------------------------------------------------------------
+
+#
+# name: empty comment (bare hash) on its own line
+#====================================================================

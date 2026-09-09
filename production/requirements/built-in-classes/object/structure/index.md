@@ -295,11 +295,11 @@ The Caspian-level surface is [`$foo.obj.truthy?`](../methods/#truthy), which rea
 ### Shadow
 
 - **New object has no shadow** — a fresh object's stack has no stack with `shadow: true`.
-- **Defining a singleton method creates the shadow** — after `method $w.greet() ... end`, the stack has exactly one shadow stack.
-- **Shadow appears at position 0 by convention** — the shadow stack created by a singleton method definition sits at the top of the stack.
+- **`.obj.shadow` creates the shadow when none exists** — after `$w.obj.shadow` on a fresh object, the stack has exactly one shadow stack.
+- **Shadow appears at position 0 by convention** — the shadow stack sits at the top of the stack, so its methods win at dispatch.
 - **Only one shadow per stack** — attempting to load an object whose serialized stack has two `shadow: true` stack raises as malformed.
 - **Shadow methods win** — a method defined on the shadow wins over the same method name on the base class.
-- **Shadow can be created explicitly via `ensure: true`** — `$w.obj.classes.shadow(ensure: true)` creates the shadow stack without adding any singleton methods.
+- **`.classes.shadow(ensure: true)` also creates the shadow** — the query-plus-ensure form is the alternative to `.obj.shadow`; both produce the same result.
 
 ### Nested objects
 

@@ -78,7 +78,7 @@ The most common `.inherited.ensure` pattern is scoped extension of a built-in cl
 
 ~~~caspian
 $colorize = class # colorize
-	method red()
+	method &red()
 		return "\e[31m" + %self + "\e[0m"
 	end
 end

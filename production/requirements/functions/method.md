@@ -4,7 +4,7 @@
 ~~~vibecode
 {"vibecode": {
 	"doc": "requirements_functions_method",
-	"role": "spec for the method type — a function bound to a receiver object. `%self` is the receiver; `%bucket` is the receiver's bucket. No captured outer scope. Like `function` and `closure`, `method name(...) ... end` is an expression that evaluates to the declared method object, so it can be captured and manipulated as a value. Method objects carry the shared function surface (`.call`, `.params`) plus a method-specific `.private` / `.private=` getter/setter pair. Content TBD beyond the shape captured here.",
+	"role": "spec for the method type — a function bound to a receiver object. `%self` is the receiver; `%bucket` is the receiver's bucket. No captured outer scope. Like `function` and `closure`, `method &name(...) ... end` is an expression that evaluates to the declared method object, so it can be captured and manipulated as a value. Method objects carry the shared function surface (`.call`, `.params`) plus a method-specific `.private` / `.private=` getter/setter pair. Content TBD beyond the shape captured here.",
 	"status": "draft — receiver-bound surface described; deeper semantics of dispatch, ownership, and role interactions to be filled in",
 	"audience": "developers writing Caspian; parser implementers; class authors"
 }}
@@ -26,12 +26,12 @@ Sibling methods on the same receiver are reached through `%self`:
 
 ~~~caspian
 class # captain
-	method greet()
+	method &greet()
 		$r = %self.rank
 		return 'greetings from ' + $r
 	end
 
-	method rank()
+	method &rank()
 		return @rank
 	end
 end
@@ -58,13 +58,13 @@ The `autorun` convention on `instance` bodies (see [instance § autorun](https:/
 
 ~~~caspian
 class # widget
-	private method helper()
+	private method &helper()
 		return @count * 2
 	end
 end
 ~~~
 
-`method helper() ... end` produces the method object; `private` receives it, sets `.private = true`, and returns it. The class-body DSL spec is on [classes/definition § Private methods](https://puck.uno/requirements/classes/definition#private-methods). The `.private = true` assignment form remains available for cases where the property should be set on a captured value after the fact.
+`method &helper() ... end` produces the method object; `private` receives it, sets `.private = true`, and returns it. The class-body DSL spec is on [classes/definition § Private methods](https://puck.uno/requirements/classes/definition#private-methods). The `.private = true` assignment form remains available for cases where the property should be set on a captured value after the fact.
 
 ## return
 
@@ -72,39 +72,41 @@ Exits with `return $value` (bare keyword) or `%call.return $value`. Both raise t
 
 ## When a function is a method
 
-A function is a method when it's declared with the `method` keyword. Two declaration contexts:
+A function is a method when it's declared with the `method` keyword inside a class body or amend body. Two declaration contexts:
 
 **Class method.** Declared inside a `class ... end` body. The method is defined on the class and inherited by every instance:
 
 ~~~caspian
 class # captain
-	method rank()
+	method &rank()
 		return @rank
 	end
 end
 ~~~
 
-**Singleton method.** Declared with `method $obj.name` syntax, attached to a specific object instance. Sibling instances of the same class do not get the method — it lives on `$obj` alone:
+**Singleton method.** Declared inside an `amend $obj.obj.shadow ... end` body. `.obj.shadow` returns `$obj`'s shadow class (creating it if none exists yet); the amend body installs methods on that shadow, so they attach to `$obj` alone and don't reach sibling instances of the same class:
 
 ~~~caspian
-method $picard.rank
-	return @rank
+amend $picard.obj.shadow
+	method &rank()
+		return @rank
+	end
 end
 ~~~
 
 Both cases produce the same in-body surface: `%self`, `%bucket`, `@field`, no captured outer scope. Inside a singleton method's body, `%self` is the object the method was declared on (`$picard` in the example above).
 
-`method` cannot appear anywhere else. A `method` declaration at the top level (with no `$obj.name` target), inside a bare function body, or inside a closure body raises. See [bare function](bare) and [closure](closure) for the other two types.
+`method` cannot appear anywhere else. `method &name(...) ... end` outside a class body or amend body raises at parse. There is no `method $obj.name(...) ... end` form — installing a method on a specific object goes through the amend-shadow pattern instead, keeping one method-def syntax (`method &name(...)` inside a class-body-shaped frame) and pushing target selection to `amend`.
 
 Separately from either declaration form, a first-class function value can be **applied** as a method on any object at the call site via `$obj.$fn` ([downloaded-methods](https://puck.uno/requirements/classes/downloaded-methods)). That mechanism doesn't use the `method` keyword — the underlying function was declared as a bare function or closure — but the applied call produces the same in-body surface, because the receiver-binding happens at the point of application.
 
 ## `method` returns the method object
 
-Like [`function`](bare) and [`closure`](closure), `method` is an expression: `method name(...) ... end` evaluates to the method object it just declared. The two effects — declaring the method on the enclosing class (or on `$obj` for the singleton form) and producing the method value — happen together in one statement.
+Like [`function`](bare) and [`closure`](closure), `method` is an expression: `method &name(...) ... end` evaluates to the method object it just declared. The two effects — declaring the method on the enclosing class (or on `$obj` for the singleton form) and producing the method value — happen together in one statement.
 
 ~~~caspian
 class # captain
-	$m = method rank()
+	$m = method &rank()
 		return @rank
 	end
 end
@@ -116,7 +118,7 @@ Capturing the value lets code hand the method to constructs that expect one — 
 
 ## Testing
 
-- **`%self` is the receiver** — `method greet() return %self end` invoked as `$obj.greet` returns `$obj`.
+- **`%self` is the receiver** — `method &greet() return %self end` invoked as `$obj.greet` returns `$obj`.
 - **`@field` reads bucket entry** — after `.new(name: 'p')`, a method body reading `@name` returns `'p'`.
 - **`@field` writes bucket entry** — a method body assigning `@name = 'x'` mutates the receiver's bucket.
 - **`%bucket['field']` equivalent to `@field`** — `%bucket['name']` and `@name` produce and mutate the same slot.
@@ -124,19 +126,19 @@ Capturing the value lets code hand the method to constructs that expect one — 
 - **No captured outer scope** — a method defined inside another function's body does not see that function's locals.
 - **`%call.role` is the caller's role** — a method invoked cross-role reads `%call.role` as the caller's role, not the method's role.
 - **Method runs as its class's role** — a method's ambient role is the class's owning role, not the caller's.
-- **Class method inherited by instances** — after `class # foo; method greet(); end; end`, every instance responds to `.greet`.
-- **Singleton method attached to specific instance** — `method $picard.rank; return 'admiral'; end` makes `$picard.rank` work but sibling instances of the same class don't get it.
-- **`method` at top level raises** — a `method` declaration outside a class body and without a `$obj.name` target errors.
-- **`method` inside a bare function body raises** — `function() method foo() end end` errors.
-- **`method` inside a closure body raises** — `closure() method foo() end end` errors.
+- **Class method inherited by instances** — after `class # foo; method &greet(); end; end`, every instance responds to `.greet`.
+- **Singleton method attached to specific instance** — after `amend $picard.obj.shadow; method &rank() return 'admiral' end; end`, `$picard.rank` works but sibling instances of the same class don't get it.
+- **`method` at top level raises** — a `method` declaration outside a class body or amend body errors at parse.
+- **`method` inside a bare function body raises** — `function() method &foo() end end` errors.
+- **`method` inside a closure body raises** — `closure() method &foo() end end` errors.
 - **`.private = true` blocks external call** — after `$m.private = true`, an outside caller invoking the method raises.
 - **`.private = false` restores external call** — after `$m.private = false`, the method is callable again.
 - **Private method callable from sibling** — a private method invoked via `%self.` from another method of the same class works.
-- **`method name(...) ... end` evaluates to the method object** — inside a class body, `$m = method foo() end` captures the method value while also declaring `foo` on the class.
+- **`method &name(...) ... end` evaluates to the method object** — inside a class body, `$m = method &foo() end` captures the method value while also declaring `foo` on the class.
 - **`.call` on a method object invokes it** — `$m.call` with `%self` bound to the receiver produces the same result as invoking through the receiver.
 - **`.params` on a method object** — same shape as bare functions; keyed by private name.
 - **Method chain on returned receiver** — `$obj.a().b()` runs `.a` then `.b` on `.a`'s return value.
-- **`return $value` exits the method** — `method foo() return 'x'; puts 'no' end` returns `'x'` without executing the `puts`.
+- **`return $value` exits the method** — `method &foo() return 'x'; puts 'no' end` returns `'x'` without executing the `puts`.
 - **`%call.return $value` exits the method** — same effect as bare `return` when the immediate frame is the method.
 - **Ad-hoc application via `$obj.$fn`** — an externally-defined bare function applied as `$obj.$fn` runs with `%self = $obj`.
 - **Downloaded methods have full `%bucket` access** — an applied function reads `@field` directly on the receiver.

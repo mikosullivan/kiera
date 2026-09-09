@@ -54,11 +54,11 @@ Read and write use the same form; assignment context is what distinguishes them:
 
 ~~~caspian
 class # captain
-	method rank()
+	method &rank()
 		return @rank
 	end
 
-	method promote($new_rank)
+	method &promote($new_rank)
 		@rank = $new_rank
 	end
 end

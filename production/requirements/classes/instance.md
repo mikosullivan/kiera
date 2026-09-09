@@ -12,7 +12,7 @@
 
 ~~~caspian
 $greeter = instance
-	method hello($name)
+	method &hello($name)
 		return 'Hello, ' + $name
 	end
 end
@@ -43,7 +43,7 @@ $config = instance
 	field :host, class: 'string', default: 'localhost'
 	field :port, class: 'integer', default: 8080
 
-	method dsn()
+	method &dsn()
 		'tcp://' + @host + ':' + @port
 	end
 end
@@ -63,10 +63,10 @@ Builds the object with constructor arguments, passing them through to the new ob
 
 ~~~caspian
 $config = instance('localhost', 8080)
-	method init(@host, @port)
+	method &init(@host, @port)
 	end
 
-	method dsn()
+	method &dsn()
 		return 'tcp://' + @host + ':' + @port
 	end
 end
@@ -80,7 +80,7 @@ Keyword args are passed the same way:
 
 ~~~caspian
 $config = instance(host: 'localhost', port: 8080)
-	method init(@host, @port)
+	method &init(@host, @port)
 	end
 end
 ~~~
@@ -96,7 +96,7 @@ The body is structurally identical to a class definition body. Whatever is legal
 Concretely:
 
 - **Field declarations** (`field :name, class: ..., default: ..., required: ...`) work as in classes. Defaults are applied to the new object's bucket via the implicit `.new()` call. `required: true` with no default would error at construction since the implicit `.new()` is called without args (use a class with an explicit `.new(...)` if you need required-but-no-default fields).
-- **Methods** (`method name(...) ... end`) are defined on the shadow class. Calling them on the new object dispatches normally.
+- **Methods** (`method &name(...) ... end`) are defined on the shadow class. Calling them on the new object dispatches normally.
 - **Inheritance** (`inherits: [...]`) is supported. The shadow class inherits from the listed classes; methods not defined locally fall back through the inheritance chain just as for any other class.
 - **Inline label.** Per the [class inline label convention](index.md), `instance # short label` carries a brief readable label after the keyword. Useful since the object, like an anonymous class, has no name to identify it.
 
@@ -108,10 +108,10 @@ If an `instance` body declares a method literally named `autorun`, the runtime i
 
 ~~~caspian
 $dsn = instance('localhost', 8080)
-	method init(@host, @port)
+	method &init(@host, @port)
 	end
 
-	method autorun()
+	method &autorun()
 		return 'tcp://' + @host + ':' + @port
 	end
 end
@@ -135,7 +135,7 @@ end
 
 **Interaction with `init`.** `init` runs first (as it does on any construction). `autorun` runs next, on the fully-initialized object, and sees whatever `init` set up in the bucket.
 
-**Domain-specific naming.** If the semantic verb for the instance is something other than "autorun" (say `.build`, `.render`, or `.generate`), write `autorun` as a one-line wrapper: `method autorun() &build end`. Same trick as `.call` for `&`-invocable classes.
+**Domain-specific naming.** If the semantic verb for the instance is something other than "autorun" (say `.build`, `.render`, or `.generate`), write `autorun` as a one-line wrapper: `method &autorun() &build end`. Same trick as `.call` for `&`-invocable classes.
 
 ---
 
@@ -181,7 +181,7 @@ The anonymous class isn't kept around past construction (no variable holds it; n
 
 ~~~caspian
 $result = instance($arg1, $arg2)
-	# body including method autorun() ... end
+	# body including method &autorun() ... end
 end
 ~~~
 
@@ -200,7 +200,7 @@ $result = $_obj.autorun()
 ## What an ad-hoc instance is
 
 - **Conceptual, not technical.** "Ad-hoc instance" is a design-pattern label, not an engine concept. Nothing in Caspian's runtime cares whether an object was built this way; the resulting object is structurally identical to one built through any other path.
-- **Starts bare, gets built up.** Conceptually, the developer instantiates "object" itself — an empty thing with no methods and no inherited classes — and then adds custom behavior to its shadow. The `instance` keyword does this in one block, but the same outcome could be reached by creating a bare object and using `.obj.classes.add` plus `method $obj.name() ... end` step by step.
+- **Starts bare, gets built up.** Conceptually, the developer instantiates "object" itself — an empty thing with no methods and no inherited classes — and then adds custom behavior to its shadow. The `instance` keyword does this in one block, but the same outcome could be reached by creating a bare object and using `.obj.classes.add` plus `amend $obj.obj.shadow ... method &name() ... end ... end` step by step.
 - **Singleton-spirited.** Like a singleton, it's one of its kind. Unlike a singleton, there's no global registry, no convention for finding it later — it lives wherever the variable holding it lives, and when that variable goes out of scope, the object goes with it.
 
 ---
@@ -247,7 +247,7 @@ $config = instance # deploy config
 	field :region, class: 'string', default: 'us-east-1'
 	field :max_attempts, class: 'integer', default: 3
 
-	method endpoint()
+	method &endpoint()
 		'https://' + @env + '.example.com'
 	end
 
@@ -278,16 +278,16 @@ $parser = instance($source) # markup parser
 	field :source, class: 'string', required: true
 	field :pos,    class: 'integer', default: 0
 
-	method init(@source)
+	method &init(@source)
 	end
 
-	method parse()
+	method &parse()
 		@pos = 0
 		# ... walk @source, build the tree ...
 		# returns the parse tree
 	end
 
-	method expect($ch)
+	method &expect($ch)
 		if @source.char_at(@pos) != $ch
 			%self.error('expected ' + $ch)
 		end
@@ -313,10 +313,10 @@ $ast = instance('1 + 2 * (3 - 4)') # expression parser
 	field :source, class: 'string', required: true
 	field :pos, class: 'integer', default: 0
 
-	method init(@source)
+	method &init(@source)
 	end
 
-	method parse_expression()
+	method &parse_expression()
 		$left = %self.parse_term
 
 		while %self.peek == '+' || %self.peek == '-'
@@ -328,7 +328,7 @@ $ast = instance('1 + 2 * (3 - 4)') # expression parser
 		return $left
 	end
 
-	method parse_term()
+	method &parse_term()
 		$left = %self.parse_factor
 
 		while %self.peek == '*' || %self.peek == '/'
@@ -340,7 +340,7 @@ $ast = instance('1 + 2 * (3 - 4)') # expression parser
 		return $left
 	end
 
-	method parse_factor()
+	method &parse_factor()
 		if %self.peek == '('
 			%self.consume
 			$inner = %self.parse_expression
@@ -351,17 +351,17 @@ $ast = instance('1 + 2 * (3 - 4)') # expression parser
 		return %self.consume
 	end
 
-	method peek()
+	method &peek()
 		return @source.char_at(@pos)
 	end
 
-	method consume()
+	method &consume()
 		$ch = @source.char_at(@pos)
 		@pos = @pos + 1
 		return $ch
 	end
 
-	method autorun()
+	method &autorun()
 		return %self.parse_expression
 	end
 end
@@ -383,17 +383,17 @@ end
 $html = instance # report builder
 	field :sections, class: 'array', default: []
 
-	method heading($text)
+	method &heading($text)
 		@sections.push('<h2>' + $text + '</h2>')
 		%self    # return self for chaining
 	end
 
-	method paragraph($text)
+	method &paragraph($text)
 		@sections.push('<p>' + $text + '</p>')
 		%self
 	end
 
-	method render()
+	method &render()
 		@sections.join("\n")
 	end
 end
@@ -417,23 +417,23 @@ $server = instance # server controller
 	field :host, class: 'string', required: true, :get, :set
 	field :ssh,  class: 'object'
 
-	method connect()
+	method &connect()
 		@ssh = %net.ssh.new(host: @host)
 	end
 
-	method snapshot()
+	method &snapshot()
 		@ssh.exec('snapshot-cmd')
 	end
 
-	method restart()
+	method &restart()
 		@ssh.exec('systemctl restart app')
 	end
 
-	method wait_healthy($timeout)
+	method &wait_healthy($timeout)
 		# poll until healthy or timeout
 	end
 
-	method teardown()
+	method &teardown()
 		@ssh.close
 	end
 end
@@ -456,32 +456,32 @@ Several features make the `instance` pattern cheap and idiomatic at the syntacti
 
 - **Everything is a class.** The shadow class inside an object is real and addressable; adding methods and inherited classes to it isn't a special case.
 - **Classes can be modified at runtime.** Adding methods to a shadow class doesn't require a separate ceremony or workaround.
-- **Singleton methods are first-class.** Caspian already provides `method $foo.name(params) ... end` for adding methods to any specific object. The `instance ... end` block is just doing this in bulk at construction time instead of one method at a time later.
+- **Singleton methods are first-class.** Caspian already provides `amend $foo.obj.shadow ... method &name($x, $y) ... end ... end` for adding methods to any specific object. The `instance ... end` block is just doing this in bulk at construction time instead of one method at a time later.
 
 Other languages support related patterns but with friction. Java requires every object to be an instance of a declared type; building an object inline that doesn't conform to one isn't expressible. Python supports it via `object()` then `__class__.method = ...`, but with dunder mechanics that signal "you're going off the rails." In Caspian, ad-hoc object construction is on the rails — no special engine support is needed, just a syntactic convenience.
 
 ## Testing
 
-- **Bare form builds an object** — `$g = instance method hello() return 'hi' end end; $g.hello` returns `'hi'`.
+- **Bare form builds an object** — `$g = instance method &hello() return 'hi' end end; $g.hello` returns `'hi'`.
 - **Bare form no init args** — `instance ... end` returns the object with default-populated bucket; no args pass to `init`.
-- **With-args form passes to `init`** — `instance('x', 5) method init(@a, @b) end end` binds `@a == 'x'`, `@b == 5`.
-- **Keyword args to `init`** — `instance(a: 'x') method init(@a) end end` binds `@a == 'x'`.
+- **With-args form passes to `init`** — `instance('x', 5) method &init(@a, @b) end end` binds `@a == 'x'`, `@b == 5`.
+- **Keyword args to `init`** — `instance(a: 'x') method &init(@a) end end` binds `@a == 'x'`.
 - **Args with no `init` raises** — `instance('x') end` (body has no `init`) raises.
 - **Field defaults apply** — `instance field :host, default: 'localhost' end` produces an object with `@host == 'localhost'`.
 - **Methods dispatch normally** — a method declared in `instance` body reaches `%self`, `@field`, `%bucket` like any class method.
 - **Inheritance from `instance` body** — `instance inherits Parent end` builds an object that responds to `Parent`'s methods.
 - **Inline label parses** — `instance # my label ... end` parses; label has no dispatch effect.
 - **No reusable class produced** — the anonymous shadow class is not reachable outside the constructed object.
-- **`autorun` method invoked when present** — `instance method autorun() return 5 end end` produces `5`, not the object.
+- **`autorun` method invoked when present** — `instance method &autorun() return 5 end end` produces `5`, not the object.
 - **`autorun` return value replaces the object** — the value of the `instance ... end` expression is the method's return, not the object.
 - **No `autorun` method → returns the object** — an instance body without a method named `autorun` produces the constructed object as usual.
 - **`autorun` method with required args raises** — the runtime invokes `.autorun()` with zero args, so a required-parameter signature errors at call time.
 - **`init` runs before `autorun`** — the `autorun` method sees the bucket after `init` has populated it.
 - **Args pass to `init`, not to `autorun`** — arguments to `instance(...)` route to `init` only.
-- **`autorun` on a class-defined instance is just a method** — `$cls = class method autorun() end end; $obj = $cls.new` produces the object; `.autorun` is not auto-invoked (the convention only fires from the `instance` construct, not from `.new`).
+- **`autorun` on a class-defined instance is just a method** — `$cls = class method &autorun() end end; $obj = $cls.new` produces the object; `.autorun` is not auto-invoked (the convention only fires from the `instance` construct, not from `.new`).
 - **`instance` desugars to class + `.new` (+ optional `.autorun`)** — the observable behavior matches the explicit `$_cls = class end; $_obj = $_cls.new(); $_obj.autorun` form.
 - **Object's shadow class holds all body declarations** — inspecting `$obj.obj.classes` (or equivalent) shows the anonymous class carries the body's methods and fields.
 - **Nested field defaults are per-instance** — `field :opts, default: {}` gives each ad-hoc instance its own hash.
-- **`%self` inside an `instance` method is the constructed object** — verified by `method me() return %self end; $obj.me == $obj`.
+- **`%self` inside an `instance` method is the constructed object** — verified by `method &me() return %self end; $obj.me == $obj`.
 - **Recursive-descent parser pattern works** — the mutually-recursive-methods example (from `parse_expression` → `parse_term` → `parse_factor`) executes and returns the correct AST for `'1 + 2 * (3 - 4)'`.
 - **`autorun` method invoked exactly once** — repeated observation of side effects confirms one call, not zero or two.

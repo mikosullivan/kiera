@@ -20,7 +20,7 @@ The simplest and most common shape is a file whose entire body is a `class ... e
 class # widget
 	field :label, class: :string
 
-	method render()
+	method &render()
 		return @label
 	end
 end
@@ -121,7 +121,7 @@ instance
 		# ...
 	end
 
-	method autorun()
+	method &autorun()
 		return null   # file's value is now null, not the instance
 	end
 end
@@ -140,7 +140,7 @@ Almost always the wrong shape for a class-serving file. Don't declare an `autoru
 - **Instance-form file honors `init` hook** — an `init` hook inside the wrapping instance runs exactly once when the file is loaded, not on each class-property access.
 - **Hash-form file yields a hash** — a file whose body is a hash literal of classes yields a hash; `$colors['red']` returns the red class.
 - **Hash-form file class is instantiable** — `$colors['red'].new(...)` produces a valid instance.
-- **`autorun` method on a class-serving instance replaces the file's value** — after adding `method autorun() return null end`, `%fetch(url)` yields `null`, not the instance.
+- **`autorun` method on a class-serving instance replaces the file's value** — after adding `method &autorun() return null end`, `%fetch(url)` yields `null`, not the instance.
 - **Fetching from `local:` produces the same value as HTTP** — a file at `local:/widget.casp` and the same file served over HTTP yield equivalent objects.
 - **Fetching from cache produces the same value** — a cached copy of a file yields a value equivalent to the origin fetch.
 - **Fetching an empty file raises** — a zero-byte `.casp` file raises per [non-caspian-mime-types § Empty-content handling](https://puck.uno/requirements/non-caspian-mime-types#empty-content-handling).

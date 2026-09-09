@@ -422,7 +422,7 @@ A `lazy: true` parameter is the mechanism behind binary-operator evaluators and 
 
 ~~~caspian
 class # ander
-	method evaluate($left: {lazy: true}, $right: {lazy: true})
+	method &evaluate($left: {lazy: true}, $right: {lazy: true})
 		if ! $left.call
 			return false
 		end

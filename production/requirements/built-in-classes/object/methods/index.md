@@ -6,7 +6,7 @@
 ~~~vibecode
 {"vibecode": {
 	"doc": "requirements_built_in_object_methods",
-	"role": "spec for the `obj` method namespace on every Caspian value — including how the namespace itself works (inherited automatically from Object, dispatched as normal methods on the receiver, not an isolation boundary, cannot be overridden — engine hardcodes the name; no user-facing final-method facility in V1) plus the full method catalog. Methods spec'd: `.pk` (returns the receiver's identity as a string — the receiver's object_pk, a UUID assigned by CVM at construction; immutable; survives serialization; opaque — the format is CVM's concern; was previously called `.id`), `.truthy?` (returns truthiness derived from the receiver's primitive field: false/null primitive → false; anything else or no primitive field → true; immutable per instance), `.isa?($class)` (class-hierarchy query), `.null?` and `.defined?` (paired predicates for the null-vs-not-null check; each is the opposite of the other), `.jail(...)` (constructs a narrowing wrapper that exposes only the named methods), `.tap` (Ruby-style chain-preserving side-effect helper — yields the receiver, runs the block, returns the receiver), `.classes` (returns an array of the receiver's stack classes in top-to-bottom order, with `.ensure($class)`, `.add_unconditionally($class)`, and `.shadow` sub-methods; `.ensure($class)` has a bare form (permanent add if missing) and a block form (temporary add-if-missing with identity-tracked cleanup at block exit); `.add_unconditionally($class)` always pushes a new stack regardless of existing membership — verbose name deliberately since the always-push case is rare — and has the same bare/block form pair with the block form always adding and always removing at exit; both add methods place the new stack on TOP of the stack (just below the shadow if one exists), so its methods win at dispatch — same shape as Ruby's `obj.extend(Module)`; the stack is walked top-to-bottom / first-to-last for method lookup; `.shadow` accepts `ensure: true` to create the shadow if missing), `.methods` (returns a lazy methods object that behaves like a Hash for all non-mutating operations — `[:name]`, `.keys`, `.values`, `.each`, `.length`, containment tests; per-lookup walk of the class graph so single-method access doesn't materialize the whole set; `.keys` returns a fresh array on each call and can differ between calls if the class was mutated; nested namespaces surface as single entries — `.methods.keys` includes `'obj'` and other nested-namespace names but not the nested members underneath; mutating operations like `[:name] = value` and `.delete` raise; access-scoped so private methods surface when called from inside the class body via %self.obj.methods but not from outside; composes with the caller pattern), `.warn($message)` (attaches a warning-only stack to the receiver; never raises, never propagates up the chain — observational only), `.stack` (returns the receiver's LIVE stack array — the returned reference IS the object's stack, not a snapshot, so pushing/splicing/reordering/deleting entries or editing stack fields mutates the object directly; `.classes.ensure` and `.classes.add_unconditionally` are convenience wrappers on top of this raw access; user- and owner-only; carries a `.shadow` sub-method that returns the shadow stack, with the same `ensure: true` kwarg; framing: stack is mutable from outside but bucket has no external-mutation surface at all, an intentional asymmetry treating bucket as encapsulated state and stack as extendable-behavior surface, gated to user + owning role), and the freeze surface (`.freeze_bucket`, `.freeze_stack`, `.freeze` — two independent object-level immutability axes plus a shortcut that locks both; each with permanent and block-scoped forms; `.freeze_bucket` is top-level-only on the receiver's own bucket, does not cascade into nested structures; freezing primitive-value contents like Hash keys or Array elements is NOT covered here — that's a direct `.freeze` method on the primitive itself) and the companion frozen-predicate surface (`.bucket_frozen?`, `.stack_frozen?`, `.frozen?` — each returns true iff the corresponding freeze method has been called; `.frozen?` returns true iff both axis predicates return true; reflect the CURRENT freeze state so block-form freezes return true DURING the block and false again after); all freeze methods are idempotent (freezing already-frozen axes is a no-op), `.destroy` (terminates the receiver: calls `.close` if defined, then clears the bucket AND drops every stack from the stack; result is a destroyed object whose only useful surface is `.obj.pk` and `.obj.destroyed?`; every other dispatch raises; the engine special-cases those two on destroyed objects since there's no class stack left to dispatch through; `.close` failures do not stop the destroy; idempotent; holding-is-access), and `.destroyed?` (returns true iff `.destroy` has been called on the receiver; callable on destroyed objects; one of only two methods that remain usable after destroy). Rule: shadows are never created by magic through a query — a bare `.shadow` call always returns whatever exists; `ensure: true` is the explicit opt-in for create-if-missing. Defining a singleton method (`method $foo.bar() ... end`) is the other explicit path that creates a shadow — the definition itself does the ensuring. More methods to be added as they're identified.",
+	"role": "spec for the `obj` method namespace on every Caspian value — including how the namespace itself works (inherited automatically from Object, dispatched as normal methods on the receiver, not an isolation boundary, cannot be overridden — engine hardcodes the name; no user-facing final-method facility in V1) plus the full method catalog. Methods spec'd: `.pk` (returns the receiver's identity as a string — the receiver's object_pk, a UUID assigned by CVM at construction; immutable; survives serialization; opaque — the format is CVM's concern; was previously called `.id`), `.truthy?` (returns truthiness derived from the receiver's primitive field: false/null primitive → false; anything else or no primitive field → true; immutable per instance), `.isa?($class)` (class-hierarchy query), `.null?` and `.defined?` (paired predicates for the null-vs-not-null check; each is the opposite of the other), `.jail(...)` (constructs a narrowing wrapper that exposes only the named methods), `.tap` (Ruby-style chain-preserving side-effect helper — yields the receiver, runs the block, returns the receiver), `.classes` (returns an array of the receiver's stack classes in top-to-bottom order, with `.ensure($class)`, `.add_unconditionally($class)`, and `.shadow` sub-methods; `.ensure($class)` has a bare form (permanent add if missing) and a block form (temporary add-if-missing with identity-tracked cleanup at block exit); `.add_unconditionally($class)` always pushes a new stack regardless of existing membership — verbose name deliberately since the always-push case is rare — and has the same bare/block form pair with the block form always adding and always removing at exit; both add methods place the new stack on TOP of the stack (just below the shadow if one exists), so its methods win at dispatch — same shape as Ruby's `obj.extend(Module)`; the stack is walked top-to-bottom / first-to-last for method lookup; `.shadow` accepts `ensure: true` to create the shadow if missing), `.methods` (returns a lazy methods object that behaves like a Hash for all non-mutating operations — `[:name]`, `.keys`, `.values`, `.each`, `.length`, containment tests; per-lookup walk of the class graph so single-method access doesn't materialize the whole set; `.keys` returns a fresh array on each call and can differ between calls if the class was mutated; nested namespaces surface as single entries — `.methods.keys` includes `'obj'` and other nested-namespace names but not the nested members underneath; mutating operations like `[:name] = value` and `.delete` raise; access-scoped so private methods surface when called from inside the class body via %self.obj.methods but not from outside; composes with the caller pattern), `.warn($message)` (attaches a warning-only stack to the receiver; never raises, never propagates up the chain — observational only), `.stack` (returns the receiver's LIVE stack array — the returned reference IS the object's stack, not a snapshot, so pushing/splicing/reordering/deleting entries or editing stack fields mutates the object directly; `.classes.ensure` and `.classes.add_unconditionally` are convenience wrappers on top of this raw access; user- and owner-only; carries a `.shadow` sub-method that returns the shadow stack, with the same `ensure: true` kwarg; framing: stack is mutable from outside but bucket has no external-mutation surface at all, an intentional asymmetry treating bucket as encapsulated state and stack as extendable-behavior surface, gated to user + owning role), and the freeze surface (`.freeze_bucket`, `.freeze_stack`, `.freeze` — two independent object-level immutability axes plus a shortcut that locks both; each with permanent and block-scoped forms; `.freeze_bucket` is top-level-only on the receiver's own bucket, does not cascade into nested structures; freezing primitive-value contents like Hash keys or Array elements is NOT covered here — that's a direct `.freeze` method on the primitive itself) and the companion frozen-predicate surface (`.bucket_frozen?`, `.stack_frozen?`, `.frozen?` — each returns true iff the corresponding freeze method has been called; `.frozen?` returns true iff both axis predicates return true; reflect the CURRENT freeze state so block-form freezes return true DURING the block and false again after); all freeze methods are idempotent (freezing already-frozen axes is a no-op), `.destroy` (terminates the receiver: calls `.close` if defined, then clears the bucket AND drops every stack from the stack; result is a destroyed object whose only useful surface is `.obj.pk` and `.obj.destroyed?`; every other dispatch raises; the engine special-cases those two on destroyed objects since there's no class stack left to dispatch through; `.close` failures do not stop the destroy; idempotent; holding-is-access), and `.destroyed?` (returns true iff `.destroy` has been called on the receiver; callable on destroyed objects; one of only two methods that remain usable after destroy). Rule: shadows are never created by magic through a query — a bare `.classes.shadow` call always returns whatever exists; `ensure: true` is the explicit opt-in for create-if-missing. The eager-create ergonomic form is `.obj.shadow` — a direct method on the `obj` namespace that returns the shadow class, creating it if none exists yet; this is what `amend $foo.obj.shadow ... end` uses as the natural path for extending one specific object with singleton methods, fields, and other class-body constructs. More methods to be added as they're identified.",
 	"status": "stub — starter methods spec'd (id, truthy?, isa?, null?, defined?, jail, tap, classes/ensure/shadow, methods, warn, freeze_bucket/freeze_stack/freeze, bucket_frozen?/stack_frozen?/frozen?, destroy, destroyed?); more to come",
 	"audience": "developers writing Caspian; engine implementers"
 }}
@@ -181,19 +181,18 @@ $widget.obj.classes.shadow(ensure: true)    # creates the shadow, returns the sh
 $widget.obj.classes.shadow                  # the shadow class
 ~~~
 
-The `ensure:` kwarg matches the pattern used by `.classes.ensure($class)`: whenever an `obj`-namespace method might need to create structure that wasn't there, `ensure: true` is the switch that opts in. Shadows never appear by magic through a query — a bare `.shadow` call always returns whatever exists.
+The `ensure:` kwarg matches the pattern used by `.classes.ensure($class)`: whenever an `obj`-namespace method might need to create structure that wasn't there, `ensure: true` is the switch that opts in. Shadows never appear by magic through a query — a bare `.classes.shadow` call always returns whatever exists.
 
-**One implicit path creates the shadow too:** defining a singleton method on the object. `method $foo.bar() ... end` is an explicit "I want a method on this specific object" — the shadow has to exist to hold the method, so the engine creates it as part of processing the definition. Callers who define singleton methods don't need to call `.shadow(ensure: true)` first; the definition itself does the ensuring.
+For most ergonomic uses — extending one specific object — reach for [`.obj.shadow`](#shadow) instead of `.classes.shadow(ensure: true)`. Same eager-create semantic, shorter path, matches the natural amend-body pattern:
 
 ~~~caspian
 $widget = Widget.new()
-$widget.obj.classes.shadow      # null — no shadow yet
 
-method $widget.greet()
-	puts 'hi'
+amend $widget.obj.shadow
+	method &greet()
+		puts 'hi'
+	end
 end
-
-$widget.obj.classes.shadow      # the shadow class — implicitly created by the definition
 ~~~
 
 **Access.** Bare query form callable from any role — untrusted holders can inspect whether the receiver has a shadow. `ensure: true` restricted to `user` and the receiver's owning role, since it mutates the stack. The returned shadow itself is a class object, and untrusted callers cannot mutate it (adding methods to a shadow class follows class-mutation rules, which do not permit untrusted mutation of a class the caller does not own).
@@ -481,11 +480,11 @@ Returns a **lazy methods object** that behaves like a [Hash](https://puck.uno/re
 
 ~~~caspian
 class # widget
-	method greet()
+	method &greet()
 		return 'hi from ' + @name
 	end
 
-	method describe()
+	method &describe()
 		return @name + ': widget'
 	end
 end
@@ -537,11 +536,11 @@ $w.obj.methods[:obj].methods.keys   # 'truthy?', 'isa?', 'methods', 'classes', '
 
 ~~~caspian
 class # widget
-	method public_op()
+	method &public_op()
 		return %self.obj.methods    # surfaces :helper — inside the class body
 	end
 
-	private method helper()
+	private method &helper()
 		return @count * 2
 	end
 end
@@ -609,6 +608,26 @@ Note the distinction from `.truthy?`: `false.obj.truthy?` is `false`, but `false
 - `.defined?` — is this anything OTHER than a Null instance?
 
 **Access.** Callable from any role.
+
+### `.shadow`
+
+Returns the receiver's shadow class, **creating it if it doesn't already exist**. This is the eager-create form — the ergonomic path for extending one specific object with its own methods, fields, or other class-body constructs:
+
+~~~caspian
+$widget = Widget.new()
+
+amend $widget.obj.shadow
+	method &greet()
+		puts 'hi'
+	end
+end
+~~~
+
+`amend` needs a real class to open a body against, so `.obj.shadow` guarantees one exists — the first call on an instance with no shadow yet creates it; subsequent calls return the same class. Idempotent.
+
+For introspection **without** creating a shadow, use [`.classes.shadow`](#classes-shadow) — the bare-query form returns `null` when no shadow exists. The distinction is the same one that runs through the whole `obj` namespace: bare accessors query, `.shadow` (and `ensure: true` on the query forms) create.
+
+**Access.** Restricted to `user` and the receiver's owning role. Creating a shadow mutates the object's stack, so the same permission gate as `.classes.ensure` and direct `.stack` writes applies. Untrusted callers raise.
 
 ### `.stack`
 
@@ -767,7 +786,7 @@ Any code — engine, library, or application — can call `.warn`. The inspectio
 - **`obj` namespace exists on every value without declaration** — a user-defined class that does not mention `obj` still has `$instance.obj.truthy?` etc. reachable on its instances.
 - **`obj` namespace method binds `%self` to the receiver** — inside `obj.truthy?` (and any other `obj.` method), `%self` is the receiver, not a helper or proxy.
 - **`obj.` dispatch is not a wrapper** — the receiver returned to a subsequent chain step is the original object; chaining `$foo.obj.tap { }.some_method` calls `some_method` on `$foo` itself.
-- **`obj` cannot be overridden** — defining `method obj() ... end`, `nested :obj ... end`, `field :obj`, or a singleton method named `obj` on any class raises at class-definition time.
+- **`obj` cannot be overridden** — defining `method &obj() ... end`, `nested :obj ... end`, `field :obj`, or a singleton method named `obj` on any class raises at class-definition time.
 
 ### `.pk`
 
@@ -894,7 +913,8 @@ Any code — engine, library, or application — can call `.warn`. The inspectio
 - **Bare call returns the shadow class when it exists** — after `.classes.shadow(ensure: true)`, a subsequent bare `.classes.shadow` returns the shadow class.
 - **`ensure: true` creates the shadow if missing** — the shadow stack exists after `.classes.shadow(ensure: true)` even though the object had none before.
 - **`ensure: true` returns the shadow class** — always returns a class value, never null.
-- **Defining a singleton method implicitly creates the shadow** — after `method $o.foo() ... end` on a bare object, `.classes.shadow` (bare form) returns a non-null class.
+- **`.obj.shadow` creates and returns the shadow** — on a bare object with no shadow yet, `.obj.shadow` returns a class value and the object now has a shadow stack.
+- **`.obj.shadow` is idempotent** — a second call returns the same class the first call produced.
 
 ### `.methods`
 
@@ -913,7 +933,7 @@ Any code — engine, library, or application — can call `.warn`. The inspectio
 - **Private methods hidden from outside** — `$w.obj.methods[:private_name]` from outside the class body returns null; the entry doesn't appear in `.keys` either.
 - **Private methods visible from inside** — `%self.obj.methods` inside a method body surfaces private methods via `[:name]` and `.keys`.
 - **Captured private-method callables do NOT retain access** — a callable captured via `$m = %self.obj.methods[:helper]` inside the class body and handed to outside code raises when the outside code invokes `$m.call`. Access is checked at each `.call` against the current frame's `%call.method_class`, not at capture.
-- **Shadow methods included** — a singleton method defined via `method $w.foo() ... end` appears in `$w.obj.methods.keys` as `'foo'`.
+- **Shadow methods included** — a singleton method defined via `amend $w.obj.shadow; method &foo() ... end; end` appears in `$w.obj.methods.keys` as `'foo'`.
 - **Inherited methods included** — a method defined on a parent class of `$w`'s class appears in `$w.obj.methods.keys`.
 - **Method-resolution winner is what's returned** — when both a class and a parent define the same-named method, `$w.obj.methods[:name]` returns the version that would dispatch under [method resolution](tag:method-resolution).
 - **Nested namespaces appear as single entries** — `.keys` includes `'obj'` (and any other nested namespace name) but does NOT include nested members like `'truthy?'` or `'isa?'`.
@@ -977,7 +997,7 @@ Any code — engine, library, or application — can call `.warn`. The inspectio
 - **Bare form is permanent** — stack cannot be modified after `.freeze_stack`.
 - **Block form scopes to the block** — after a `.freeze_stack do ... end` block exits, stack modifications succeed again.
 - **Block form releases on raise** — same exception-safe release as `.freeze_bucket`.
-- **Blocks singleton method definition** — `method $w.foo() ... end` raises after `.freeze_stack`.
+- **Blocks singleton method definition** — `amend $w.obj.shadow; method &foo() ... end; end` raises after `.freeze_stack` (either at the `.obj.shadow` create if no shadow yet exists, or at the method registration if one does).
 - **Blocks class adds** — `.classes.ensure(Some_class)` raises after `.freeze_stack`.
 - **Bucket writes still work** — `.freeze_stack` doesn't block bucket writes.
 
@@ -998,7 +1018,7 @@ Any code — engine, library, or application — can call `.warn`. The inspectio
 - **`.obj.destroyed?` returns `true` post-destroy**.
 - **Other method calls raise post-destroy** — class-defined methods, other `.obj.X` methods, freeze operations, and downloaded methods all raise "destroyed object" on the destroyed receiver.
 - **Bucket reads raise post-destroy** — `$foo.@field` on a destroyed object raises.
-- **Singleton methods gone post-destroy** — a method defined via `method $foo.bar() ... end` no longer dispatches after `$foo.obj.destroy` (the shadow stack carrying it is gone).
+- **Singleton methods gone post-destroy** — a method defined via `amend $foo.obj.shadow; method &bar() ... end; end` no longer dispatches after `$foo.obj.destroy` (the shadow stack carrying it is gone).
 - **`.close` raise does not stop destroy** — if `.close` raises during the destroy, the bucket AND stack are still cleared and the object is still destroyed.
 - **Idempotent** — a second `.destroy` call is a no-op that returns cleanly.
 - **Anyone holding can destroy** — follows holding-is-access; no role restriction.

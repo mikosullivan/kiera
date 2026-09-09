@@ -429,6 +429,57 @@ $local_var = 10
 
 
 #====================================================================
+# name: @name (at-sigil atom) as expression on RHS of setvar [ghi]
+#
+
+#--- code -----------------------------------------------------------
+$x = @name
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		"scope",
+		"setvar",
+		"x",
+		{
+			"at": "name",
+			"line": 1
+		},
+		{
+			"line": 1
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM refactor --------------------------------------------------
+[
+	{
+		"frame": true,
+		"fn": "=",
+		"syn": true,
+		"args": [
+			"x",
+			[
+				{
+					"bucket": true,
+					"fn": "[]",
+					"syn": true,
+					"args": [[{"primitive": "name"}]]
+				}
+			]
+		]
+	}
+]
+#--------------------------------------------------------------------
+
+#
+# name: @name (at-sigil atom) as expression on RHS of setvar
+#====================================================================
+
+
+#====================================================================
 # name: bare-word call, no args [ghi]
 #
 
@@ -5912,6 +5963,7 @@ end
 			"blocks": [
 				{
 					"closure": {
+						"params": [],
 						"body": [
 							[
 								{
@@ -5929,8 +5981,7 @@ end
 									"right": "return"
 								}
 							]
-						],
-						"params": []
+						]
 					}
 				}
 			]
@@ -6008,6 +6059,7 @@ end
 			"blocks": [
 				{
 					"function": {
+						"params": [],
 						"body": [
 							[
 								{
@@ -6027,8 +6079,7 @@ end
 									"right": "return"
 								}
 							]
-						],
-						"params": []
+						]
 					}
 				}
 			]
@@ -6118,6 +6169,7 @@ end
 			"blocks": [
 				{
 					"closure": {
+						"params": [],
 						"body": [
 							[
 								{
@@ -6137,12 +6189,12 @@ end
 									"right": "return"
 								}
 							]
-						],
-						"params": []
+						]
 					}
 				},
 				{
 					"closure": {
+						"params": [],
 						"body": [
 							[
 								{
@@ -6162,12 +6214,12 @@ end
 									"right": "return"
 								}
 							]
-						],
-						"params": []
+						]
 					}
 				},
 				{
 					"function": {
+						"params": [],
 						"body": [
 							[
 								{
@@ -6187,8 +6239,7 @@ end
 									"right": "return"
 								}
 							]
-						],
-						"params": []
+						]
 					}
 				}
 			]
@@ -6345,6 +6396,9 @@ end
 			"blocks": [
 				{
 					"closure": {
+						"params": [
+							"item"
+						],
 						"body": [
 							[
 								{
@@ -6358,9 +6412,6 @@ end
 									"line": 2
 								}
 							]
-						],
-						"params": [
-							"item"
 						]
 					}
 				}
@@ -6834,6 +6885,10 @@ end
 	[
 		{
 			"function": {
+				"name": "early_exit",
+				"params": [
+					"x"
+				],
 				"body": [
 					[
 						"scope",
@@ -6843,6 +6898,7 @@ end
 								{
 									"body": {
 										"closure": {
+											"params": [],
 											"body": [
 												[
 													"scope",
@@ -6855,8 +6911,7 @@ end
 														"line": 3
 													}
 												]
-											],
-											"params": []
+											]
 										}
 									},
 									"cond": {
@@ -6897,10 +6952,6 @@ end
 							"line": 6
 						}
 					]
-				],
-				"name": "early_exit",
-				"params": [
-					"x"
 				]
 			},
 			"line": 7
@@ -6973,6 +7024,7 @@ end
 		"exit_frame",
 		{
 			"closure": {
+				"params": [],
 				"body": [
 					[
 						{
@@ -6990,8 +7042,7 @@ end
 							"right": "return"
 						}
 					]
-				],
-				"params": []
+				]
 			}
 		},
 		{
@@ -7256,6 +7307,10 @@ end
 						{
 							"line": 4,
 							"method": {
+								"name": "hello",
+								"params": [
+									"name"
+								],
 								"body": [
 									[
 										"scope",
@@ -7276,10 +7331,6 @@ end
 											"line": 3
 										}
 									]
-								],
-								"name": "hello",
-								"params": [
-									"name"
 								]
 							}
 						}
@@ -7388,9 +7439,9 @@ end
 						{
 							"line": 3,
 							"method": {
-								"body": [],
 								"name": "init",
-								"params": []
+								"params": [],
+								"body": []
 							}
 						}
 					],
@@ -7398,6 +7449,8 @@ end
 						{
 							"line": 7,
 							"method": {
+								"name": "dsn",
+								"params": [],
 								"body": [
 									[
 										"scope",
@@ -7434,9 +7487,7 @@ end
 											"line": 6
 										}
 									]
-								],
-								"name": "dsn",
-								"params": []
+								]
 							}
 						}
 					],
@@ -7748,6 +7799,10 @@ end
 						{
 							"line": 3,
 							"method": {
+								"name": "hello",
+								"params": [
+									"name"
+								],
 								"body": [
 									[
 										"scope",
@@ -7768,10 +7823,6 @@ end
 											"line": 2
 										}
 									]
-								],
-								"name": "hello",
-								"params": [
-									"name"
 								]
 							}
 						}
@@ -7863,6 +7914,10 @@ $greeter = instance method hello($name)return 'Hello, ' + $name end end
 						{
 							"line": 1,
 							"method": {
+								"name": "hello",
+								"params": [
+									"name"
+								],
 								"body": [
 									[
 										"scope",
@@ -7883,10 +7938,6 @@ $greeter = instance method hello($name)return 'Hello, ' + $name end end
 											"line": 1
 										}
 									]
-								],
-								"name": "hello",
-								"params": [
-									"name"
 								]
 							}
 						}
@@ -10975,6 +11026,7 @@ $caller.call 1
 				{
 					"body": {
 						"closure": {
+							"params": [],
 							"body": [
 								[
 									{
@@ -10993,8 +11045,7 @@ $caller.call 1
 										"right": "controller="
 									}
 								]
-							],
-							"params": []
+							]
 						}
 					},
 					"cond": {
@@ -11119,7 +11170,9 @@ end
 		"foo",
 		{
 			"closure": {
-				"as": "loop",
+				"params": [
+					"idx"
+				],
 				"body": [
 					[
 						{
@@ -11139,9 +11192,7 @@ end
 						}
 					]
 				],
-				"params": [
-					"idx"
-				]
+				"as": "loop"
 			}
 		},
 		{
@@ -11229,14 +11280,6 @@ end # end of outer function
 		"foo",
 		{
 			"function": {
-				"body": [
-					[
-						{
-							"amp": "myfunc",
-							"line": 13
-						}
-					]
-				],
 				"params": [
 					{
 						"comment": "outer function"
@@ -11262,6 +11305,19 @@ end # end of outer function
 								"default",
 								{
 									"function": {
+										"params": [
+											{
+												"meta": [
+													[
+														"default",
+														{
+															"value": 80
+														}
+													]
+												],
+												"name": "port"
+											}
+										],
 										"body": [
 											{
 												"comment": "function as default param",
@@ -11279,19 +11335,6 @@ end # end of outer function
 													"line": 2
 												}
 											]
-										],
-										"params": [
-											{
-												"meta": [
-													[
-														"default",
-														{
-															"value": 80
-														}
-													]
-												],
-												"name": "port"
-											}
 										]
 									},
 									"line": 3
@@ -11304,6 +11347,14 @@ end # end of outer function
 						],
 						"name": "myfunc"
 					}
+				],
+				"body": [
+					[
+						{
+							"amp": "myfunc",
+							"line": 13
+						}
+					]
 				]
 			}
 		},
@@ -11738,7 +11789,6 @@ end
 	[
 		{
 			"function": {
-				"body": [],
 				"params": [
 					{
 						"meta": [
@@ -11778,7 +11828,8 @@ end
 						],
 						"name": "myfunc"
 					}
-				]
+				],
+				"body": []
 			},
 			"line": 10
 		}
@@ -11971,13 +12022,13 @@ $foo.$func(1, 2, 3)
 		"func",
 		{
 			"function": {
-				"body": [],
 				"params": [
 					{
 						"name": "args",
 						"splat": true
 					}
-				]
+				],
+				"body": []
 			}
 		},
 		{
@@ -12121,6 +12172,7 @@ end
 						"cl",
 						{
 							"closure": {
+								"params": [],
 								"body": [
 									[
 										{
@@ -12134,8 +12186,7 @@ end
 											"line": 7
 										}
 									]
-								],
-								"params": []
+								]
 							}
 						},
 						{
@@ -12392,6 +12443,7 @@ $caller.call
 		"fn",
 		{
 			"function": {
+				"params": [],
 				"body": [
 					[
 						{
@@ -12399,8 +12451,7 @@ $caller.call
 							"line": 2
 						}
 					]
-				],
-				"params": []
+				]
 			}
 		},
 		{

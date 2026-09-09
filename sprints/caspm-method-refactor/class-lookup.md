@@ -2,7 +2,7 @@
 {"vibecode": {
 	"doc": "sprint-notes",
 	"sprint": "caspm-method-refactor",
-	"role": "Explains how the engine resolves the `{class: true}` atom at runtime — the process of finding the specific class being acted on when a method-definition (or any `class:true`-receivered) step executes. Covers the frame-stack walk, what makes a frame class-owning (dispatched `fn: 'class'` or `fn: 'amend'`), nesting precedence, the closure-escape corner case, and the error case at top level.",
+	"role": "Explains how the engine resolves the `{class: true}` atom at runtime — the process of finding the specific class being acted on when a method-definition (or any `class:true`-receivered) step executes. Covers the frame-stack walk, what makes a frame class-owning (dispatched `fn: 'class'` or `fn: 'amend'`), nesting precedence, and the error case at top level.",
 	"status": "current"
 }}
 ~~~
@@ -59,17 +59,6 @@ Both frames are class-frames. The walk hits the inner one first — nearest wins
 ### Nested amend-in-class (or class-in-amend)
 
 Same rule: nearest wins. Whichever frame is closest on the walk owns the method. In practice that means intent expressed nearest to the definition is honored — a method inside an amend body registers on the amend target, even if that amend body sits inside another class.
-
-## Corner case: closure carrying a method-definition step, invoked inside a class body
-
-Under the dynamic-scoping semantic, if a closure containing a `{class:true, fn:"method"}` step gets INVOKED inside a class body, the walk finds the class-frame and registers the method on the class-being-worked-on — regardless of where the closure was defined.
-
-In practice this corner case is hard to construct in valid Caspian. Scope rules prevent the obvious paths:
-
-- Top-level variables aren't visible inside `class ... end`, so a top-level `$foo = closure() ... end` followed by `$foo.call` inside a class body doesn't parse — `$foo` isn't in scope there.
-- Class bodies have their own scope; a closure would have to arrive via an unusual path — passed in as an arg to `.new()` or similar constructor, stashed on the class's own bucket beforehand, retrieved through `%engine` or another ambient service, etc.
-
-Even in those unusual paths, the semantic is what the stack walk says: dynamic; the class is determined by where the code RUNS, not where it was WRITTEN. If a use-case ever surfaces where lexical binding is wanted ("this method registers on the class this step was WRITTEN inside, not the caller's class"), that's a cjcm-time addition — bake the target-class reference into the step at compile time. Not needed for V1; not needed until a concrete case demands it.
 
 ## Error case: no class on the stack
 

@@ -1,0 +1,268 @@
+#!/usr/bin/caspian
+
+vibecode <<EOF
+{
+	"doc":    "test_cases_parsing_if",
+	"role":   "sibling of parse.casp holding all if / elsif / else / unless transpiler fixtures. Split out to keep parse.casp focused on core syntax; same fixture format (boxed by `#===...` outer borders, sections `#--- code ---` / `#--- CaspJ ---` / `#--- CaspM ---` or `#--- CaspM refactor ---`), read by the same parse-extract module.",
+	"status": "growing; if-as-expression (`$x = if COND ... end`) with `as $name` controller binding deferred until the transpiler emits value-atom form"
+}
+EOF
+
+#====================================================================
+# if / elsif / else / unless
+#====================================================================
+
+
+#====================================================================
+# name: if / elsif / elseif / else chain (with `and` binop in one branch cond) [ghi]
+#
+
+#--- Caspian -----------------------------------------------------------
+if $whole < 13
+	&label 'child'
+elsif $whole < 20
+	&label 'teen'
+elseif $whole >= 18 and $whole < 30
+	&label 'twentysomething'
+else
+	&label 'adult'
+end
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+
+#--------------------------------------------------------------------
+
+#
+# name: if / elsif / elseif / else chain (with `and` binop in one branch cond)
+#====================================================================
+
+
+#====================================================================
+# name: elseif is a syntactic alias for elsif (identical CaspianJ) [ghi]
+#
+
+#--- Caspian -----------------------------------------------------------
+if $whole == 42
+	&primary
+elseif $whole == 43              # elseif == elsif
+	&secondary
+end
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+
+#--------------------------------------------------------------------
+
+#
+# name: elseif is a syntactic alias for elsif (identical CaspianJ)
+#====================================================================
+
+
+#====================================================================
+# name: unless block with body only (no else) [ghi]
+#
+
+#--- Caspian -----------------------------------------------------------
+unless $yes
+	&denied
+end
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+
+#--------------------------------------------------------------------
+
+#
+# name: unless block with body only (no else)
+#====================================================================
+
+
+#====================================================================
+# name: comment between `unless` and its condition (comments are non-significant) [ghi]
+#
+
+#--- Caspian -----------------------------------------------------------
+unless # some comment
+$yes
+	&denied
+end
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+
+#--------------------------------------------------------------------
+
+#
+# name: comment between `unless` and its condition (comments are non-significant)
+#====================================================================
+
+
+#====================================================================
+# name: comment between unary ! and its parenthesized operand (comment hoisted out of cond) [ghi]
+#
+
+#--- Caspian -----------------------------------------------------------
+if ! # some comment
+($yes)
+	&denied
+end
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+
+#--------------------------------------------------------------------
+
+#
+# name: comment between unary ! and its parenthesized operand (comment hoisted out of cond)
+#====================================================================
+
+
+#====================================================================
+# name: comment inside a parenthesized cond (comment hoisted out; parens not preserved in CaspJ) [ghi]
+#
+
+#--- Caspian -----------------------------------------------------------
+if (! # some comment
+$yes)
+	&denied
+end
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+
+#--------------------------------------------------------------------
+
+#
+# name: comment inside a parenthesized cond (comment hoisted out; parens not preserved in CaspJ)
+#====================================================================
+
+
+#====================================================================
+# name: comment between unary ! and its bare (no-parens) operand [ghi]
+#
+
+#--- Caspian -----------------------------------------------------------
+if ! # some comment
+$yes
+	&denied
+end
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+
+#--------------------------------------------------------------------
+
+#
+# name: comment between unary ! and its bare (no-parens) operand
+#====================================================================
+
+
+#====================================================================
+# name: if with only a body (no elsif, no else) [ghi]
+# single branch
+#
+
+#--- Caspian -----------------------------------------------------------
+if $ready
+	&proceed
+end
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+
+#--------------------------------------------------------------------
+
+#
+# name: if with only a body (no elsif, no else)
+# single branch
+#====================================================================
+
+
+#====================================================================
+# name: single-line if / else / end (indent-insensitive, newline-agnostic) [ghi]
+#
+
+#--- Caspian -----------------------------------------------------------
+if &ok &yay else &nay end
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+
+#--------------------------------------------------------------------
+
+#
+# name: single-line if / else / end (indent-insensitive, newline-agnostic)
+#====================================================================
+
+
+# design decisions for Section 8 (if / elsif / else / unless):
+#
+#   Shape (both if and unless use the same branch-chain shape, distinct verbs):
+#
+#     ["scope", "if_end",     {branches: [{cond, body}, ...]}]
+#     ["scope", "unless_end", {branches: [{cond, body}, ...]}]
+#
+#   Each branch is a {cond, body} dict. The `else` branch is encoded with
+#   cond: null. `elsif` and `elseif` are syntactic aliases — both flatten
+#   into a single additional branch entry with the given cond.
+#
+#   Parser ordering rules:
+#     - `elsif` / `elseif` after `else` raises (else must be terminal).
+#     - Duplicate `else` in one if/unless block raises.
+#
+#   `unless` uses its own verb (`unless_end`) rather than desugaring to
+#   if-with-negated-cond. Keeps the shape faithful to what the developer wrote.
+#
+# survey material below: `if COND ... as $tier` chain-exit binding is deferred
+# until the `as $bindname` clause is spec'd across constructs (loops also
+# support it — Section 9 survey has `while $x < 20 as $loop`).
+
+# deferred: expression-form `if` / `unless` with `as $var` chain-exit binding.
+# Two things not yet in the transpiler:
+#   (a) if_end / unless_end usable as a value-atom at expression position (parse
+#       via parse_construct_as_expression). Currently they emit statement rows
+#       only.
+#   (b) `as $name` on the opener lifted into a dedicated `as: NAME` field on
+#       the atom (Option B — appears only when declared). Currently `as $name`
+#       is captured as a body-first `[{bwc: "as"}, {var: NAME}]` bwc call in
+#       the branch body, which isn't the controller-binding shape.
+#
+# Target source (both if and unless):
+#
+#     $label = if $whole < 13 as $tier
+#         $tier.return 'child'
+#     elsif $whole < 18
+#         $tier.return 'teen'
+#     else
+#         $tier.return 'adult'
+#     end
+#
+#     $label = unless $whole < 13 as $tier
+#         $tier.return 'child'
+#     elsif $whole < 18
+#         $tier.return 'teen'
+#     else
+#         $tier.return 'adult'
+#     end
+#
+# Target full CaspJ (if variant — unless is the same with `unless_end`):
+#
+#     [
+#         ["scope", "setvar", "label", {
+#             "if_end": {
+#                 "as": "tier",
+#                 "branches": [
+#                     {
+#                         "cond": {"op": "<", "left": {"var": "whole"}, "right": {"value": 13}},
+#                         "body": [[{"var": "tier"}, "return", {"args": [{"value": "child"}]}]]
+#                     },
+#                     {
+#                         "cond": {"op": "<", "left": {"var": "whole"}, "right": {"value": 18}},
+#                         "body": [[{"var": "tier"}, "return", {"args": [{"value": "teen"}]}]]
+#                     },
+#                     {"body": [[{"var": "tier"}, "return", {"args": [{"value": "adult"}]}]]}
+#                 ]
+#             }
+#         }]
+#     ]

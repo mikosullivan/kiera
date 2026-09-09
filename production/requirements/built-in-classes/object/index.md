@@ -27,7 +27,7 @@ $my_object = %('puck.uno/object').new()
 Primarily useful in factory functions and any other place where the caller wants to build the object up programmatically:
 
 - **Add classes to the stack** with `$my_object.obj.classes.add($some_class)`.
-- **Add singleton methods** with `method $my_object.name() ... end`.
+- **Add singleton methods** with `amend $my_object.obj.shadow; method &name() ... end; end`.
 - **Set bucket state** directly (`$my_object['key'] = 'value'`).
 - **Return** the finished object.
 
@@ -47,7 +47,7 @@ Object contributes a single method, `obj`, that carries the cross-cutting method
 - **Bare object has only Object in its class stack** — `%('puck.uno/object').new().obj.classes` returns an array containing just the Object class.
 - **Every value is an Object** — for each primitive literal (`42`, `'hi'`, `true`, `false`, `null`, `[]`, `{}`), `.obj.isa?(Object)` is `true`.
 - **Bare object can accept added classes** — after `$o = %('puck.uno/object').new(); $o.obj.classes.ensure(Some_class)`, `$o.obj.isa?(Some_class)` is `true`.
-- **Bare object can accept singleton methods** — after defining `method $o.name() 'x' end` on a bare object, `$o.name` returns `'x'`.
+- **Bare object can accept singleton methods** — after `amend $o.obj.shadow; method &name() return 'x' end; end` on a bare object, `$o.name` returns `'x'`.
 - **Bare object can accept direct bucket writes** — after `$o = %('puck.uno/object').new(); $o.@key = 'value'`, `$o.@key` is `'value'`.
 - **Two `.new()` calls return distinct instances** — successive bare-object constructions have distinct identity; buckets are independent.
 

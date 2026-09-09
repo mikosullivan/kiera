@@ -3533,42 +3533,14 @@ local function read_signature(source, start_i, keyword_name)
 			i = i + 1
 		end
 
-	elseif keyword_name == "method" and i <= len
-		and (source:sub(i, i) == "$" or source:sub(i, i) == "%") then
-		-- Singleton method: `method <receiver-expr>.name(...) ... end`. Receiver
-		-- is a variable / context / dot-chain; name is the last dot-segment.
-		local sig_prefix = source:sub(i):match("^([%$%%][%w_]+[%w_%.]*)")
-
-		if not sig_prefix then
-			error("transpile: `" .. keyword_name .. "` with malformed receiver")
-		end
-
-		local recv_str, name_str = sig_prefix:match("^(.-)%.([%w_]+%??)$")
-
-		if not recv_str or recv_str == "" or name_str == "" then
-			error("transpile: `" .. keyword_name .. " " .. sig_prefix
-				.. "` — expected `<receiver>.<name>` singleton form")
-		end
-
-		receiver = parse_expression(recv_str)
-		name = name_str
-		i = i + #sig_prefix
-
-		while i <= len and source:sub(i, i):match("%s") do
-			i = i + 1
-		end
-
-	elseif keyword_name == "method" and i <= len and source:sub(i, i):match("[%w_]") then
-		-- `method` accepts a bareword name (no `&` sigil) as an alternative to
-		-- `method &name`. `function` and `closure` still require the `&` sigil.
-		local bareword = source:sub(i):match("^([%w_]+)")
-
-		name = bareword
-		i = i + #bareword
-
-		while i <= len and source:sub(i, i):match("%s") do
-			i = i + 1
-		end
+	elseif keyword_name == "method" then
+		-- `method` requires `&<name>` — same sigil rule as function/closure.
+		-- The old singleton form (`method $obj.name(...) ... end`) and the
+		-- sigil-less bareword form (`method foo(...) ... end`) both retired:
+		-- installing a method on a specific object now goes through
+		-- `amend $obj.obj.shadow ... method &name() ... end ... end`, and the
+		-- name-sigil rule is uniform across all three callable-def keywords.
+		error("transpile: `method` requires `&<name>(...)` signature — the singleton `method $obj.name(...)` and sigil-less `method name(...)` forms are no longer accepted")
 	end
 
 	if i > len or source:sub(i, i) ~= "(" then

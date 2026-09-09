@@ -1,0 +1,30 @@
+#!/usr/bin/caspian
+
+vibecode <<EOF
+{
+	"doc":    "test_cases_parsing_ternary",
+	"role":   "sibling of parse.casp holding transpiler fixtures for the ternary conditional operator (`COND ? THEN : ELSE`). Extracted from the Operators section so future ternary variants (nested ternaries, ternary in argument position, ternary-with-method-call-branches, etc.) can grow here without crowding operator fixtures. Same fixture format (boxed by `#===...` outer borders, sections `#--- code ---` / `#--- CaspJ ---` / `#--- CaspM ---` or `#--- CaspM refactor ---`), read by the same parse-extract module.",
+	"status": "growing; currently holds one fixture — the basic conditional form"
+}
+EOF
+
+#====================================================================
+# Ternary
+#====================================================================
+
+
+#====================================================================
+# name: ternary conditional [ghi]
+#
+
+#--- Caspian -----------------------------------------------------------
+$x ? 'positive' : 'non-positive'
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+
+#--------------------------------------------------------------------
+
+#
+# name: ternary conditional
+#====================================================================

@@ -83,6 +83,8 @@ end
 						{
 							"line": 4,
 							"method": {
+								"name": "hello",
+								"params": [],
 								"body": [
 									[
 										"scope",
@@ -95,9 +97,7 @@ end
 											"line": 3
 										}
 									]
-								],
-								"name": "hello",
-								"params": []
+								]
 							}
 						}
 					]
@@ -116,8 +116,7 @@ end
 		"fn": "class",
 		"body": [
 			{
-				"class": true,
-				"fn": "method",
+				"bwc": "method",
 				"name": "hello",
 				"params": {},
 				"body": [
@@ -160,6 +159,8 @@ end
 						{
 							"line": 4,
 							"method": {
+								"name": "hello",
+								"params": [],
 								"body": [
 									[
 										"scope",
@@ -172,9 +173,7 @@ end
 											"line": 3
 										}
 									]
-								],
-								"name": "hello",
-								"params": []
+								]
 							}
 						}
 					]
@@ -220,6 +219,688 @@ end
 
 
 #====================================================================
+# name: class with a private method [ghi]
+# `private` is a method on the class-being-worked-on, NOT a modifier
+# keyword. Decomposes to two steps in the class body: register the
+# method (rv = its pk), then dispatch .private on the class with that
+# pk as arg. Same shape extends to protected / abstract / autorun /
+# static / final / any DSL-defined access method.
+#
+
+#--- code -----------------------------------------------------------
+class
+	private method &foo()
+	end
+end
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		{
+			"class": {
+				"body": [
+					[
+						{
+							"bwc": "private"
+						},
+						{
+							"line": 3,
+							"method": {
+								"name": "foo",
+								"params": [],
+								"body": []
+							}
+						}
+					]
+				]
+			},
+			"line": 4
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM refactor --------------------------------------------------
+[
+	{
+		"frame": true,
+		"fn": "class",
+		"body": [
+			{
+				"class": true,
+				"fn": "method",
+				"name": "foo",
+				"params": {},
+				"body": []
+			},
+			{
+				"class": true,
+				"fn": "private",
+				"args": [[{"rv": true}]]
+			}
+		]
+	}
+]
+#--------------------------------------------------------------------
+
+#
+# name: class with a private method
+#====================================================================
+
+
+#====================================================================
+# name: class with @-auto-assign init [ghi]
+# `method &init(@name, @rank) end` — the `@`-sigil on each param is
+# sugar for "assign the arg value directly into `%bucket[name]` at
+# param-binding time." Equivalent long form is
+# `method &init($name, $rank) @name = $name; @rank = $rank end`;
+# same net bucket state after init returns, just less boilerplate.
+# Never fires setters — `@` is raw bucket access, same as everywhere
+# else in the language (see syntax/sigils § @).
+#
+# CaspM refactor moves the auto-assign from a body-prepended setat
+# sequence into per-param metadata: `{bucket: true}` on the spec.
+# Body reflects only what the user actually wrote.
+#
+
+#--- code -----------------------------------------------------------
+class
+	method &init(@name, @rank)
+	end
+end
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		{
+			"class": {
+				"body": [
+					[
+						{
+							"line": 3,
+							"method": {
+								"name": "init",
+								"params": [
+									{
+										"name": "name"
+									},
+									{
+										"name": "rank"
+									}
+								],
+								"body": [
+									[
+										"scope",
+										"setat",
+										"name",
+										{
+											"var": "name"
+										}
+									],
+									[
+										"scope",
+										"setat",
+										"rank",
+										{
+											"var": "rank"
+										}
+									]
+								]
+							}
+						}
+					]
+				]
+			},
+			"line": 4
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM refactor --------------------------------------------------
+[
+	{
+		"frame": true,
+		"fn": "class",
+		"body": [
+			{
+				"class": true,
+				"fn": "method",
+				"name": "init",
+				"params": {
+					"name": {"bucket": true},
+					"rank": {"bucket": true}
+				},
+				"body": []
+			}
+		]
+	}
+]
+#--------------------------------------------------------------------
+
+#
+# name: class with @-auto-assign init
+#====================================================================
+
+
+
+#====================================================================
+# name: method sugar form (method &name) [ghi]
+# only form available for methods
+#
+
+#--- code -----------------------------------------------------------
+method &init($name, $rank)
+	return null
+end
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		{
+			"line": 3,
+			"method": {
+				"name": "init",
+				"params": [
+					"name",
+					"rank"
+				],
+				"body": [
+					[
+						"scope",
+						"return",
+						{
+							"line": 2,
+							"value": null
+						},
+						{
+							"line": 2
+						}
+					]
+				]
+			}
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM refactor --------------------------------------------------
+[
+	{
+		"frame": true,
+		"fn": "method",
+		"name": "init",
+		"params": {"name": {}, "rank": {}},
+		"body": [
+			{"bwc": "return", "args": [[{"primitive": null}]]}
+		]
+	}
+]
+#--------------------------------------------------------------------
+
+#
+# name: method sugar form (method &name)
+# only form available for methods
+#====================================================================
+
+
+#====================================================================
+# name: method with @-sigil param [ghi]
+# auto-assign desugars to `["scope", "setat", name, {var: name}]` at body start
+#
+
+#--- code -----------------------------------------------------------
+method &init(@name, @rank)
+end
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		{
+			"line": 2,
+			"method": {
+				"name": "init",
+				"params": [
+					{
+						"name": "name"
+					},
+					{
+						"name": "rank"
+					}
+				],
+				"body": [
+					[
+						"scope",
+						"setat",
+						"name",
+						{
+							"var": "name"
+						}
+					],
+					[
+						"scope",
+						"setat",
+						"rank",
+						{
+							"var": "rank"
+						}
+					]
+				]
+			}
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM -----------------------------------------------------------
+[
+	[
+		{
+			"method": {
+				"bd": [
+					[
+						{
+							"cmd": "mc"
+						},
+						{
+							"a": [
+								{
+									"v": "name"
+								},
+								{
+									"var": "name"
+								}
+							],
+							"fn": "[]=",
+							"rcvr": {
+								"context": "bucket"
+							}
+						}
+					],
+					[
+						{
+							"cmd": "mc"
+						},
+						{
+							"a": [
+								{
+									"v": "rank"
+								},
+								{
+									"var": "rank"
+								}
+							],
+							"fn": "[]=",
+							"rcvr": {
+								"context": "bucket"
+							}
+						}
+					]
+				],
+				"name": "init",
+				"pm": [
+					{
+						"name": "name"
+					},
+					{
+						"name": "rank"
+					}
+				]
+			}
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#
+# name: method with @-sigil param
+# auto-assign desugars to a `%bucket[name] = <arg>` `[]=` call in the body
+#====================================================================
+
+
+#====================================================================
+# name: method with @-sigil param default-shortcut [ghi]
+# `@name: value` maps to `{default: value}` metadata
+#
+
+#--- code -----------------------------------------------------------
+method &init(@soliloquy: '')
+end
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		{
+			"line": 2,
+			"method": {
+				"name": "init",
+				"params": [
+					{
+						"meta": [
+							[
+								"default",
+								{
+									"value": ""
+								}
+							]
+						],
+						"name": "soliloquy"
+					}
+				],
+				"body": [
+					[
+						"scope",
+						"setat",
+						"soliloquy",
+						{
+							"var": "soliloquy"
+						}
+					]
+				]
+			}
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM -----------------------------------------------------------
+[
+	[
+		{
+			"method": {
+				"bd": [
+					[
+						{
+							"cmd": "mc"
+						},
+						{
+							"a": [
+								{
+									"v": "soliloquy"
+								},
+								{
+									"var": "soliloquy"
+								}
+							],
+							"fn": "[]=",
+							"rcvr": {
+								"context": "bucket"
+							}
+						}
+					]
+				],
+				"name": "init",
+				"pm": [
+					{
+						"meta": [
+							[
+								"default",
+								{
+									"v": ""
+								}
+							]
+						],
+						"name": "soliloquy"
+					}
+				]
+			}
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#
+# name: method with @-sigil param default-shortcut
+# `@name: value` maps to `{default: value}` metadata
+#====================================================================
+
+
+#====================================================================
+# name: method with @-sigil param + full rich metadata (`@x: {class: :string, default: 5}`) [ghi]
+#
+
+#--- code -----------------------------------------------------------
+method &init(@x: {class: 'string', default: 5})
+end
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		{
+			"line": 2,
+			"method": {
+				"name": "init",
+				"params": [
+					{
+						"meta": [
+							[
+								"class",
+								{
+									"value": "string"
+								}
+							],
+							[
+								"default",
+								{
+									"value": 5
+								}
+							]
+						],
+						"name": "x"
+					}
+				],
+				"body": [
+					[
+						"scope",
+						"setat",
+						"x",
+						{
+							"var": "x"
+						}
+					]
+				]
+			}
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM -----------------------------------------------------------
+[
+	[
+		{
+			"method": {
+				"bd": [
+					[
+						{
+							"cmd": "mc"
+						},
+						{
+							"a": [
+								{
+									"v": "x"
+								},
+								{
+									"var": "x"
+								}
+							],
+							"fn": "[]=",
+							"rcvr": {
+								"context": "bucket"
+							}
+						}
+					]
+				],
+				"name": "init",
+				"pm": [
+					{
+						"meta": [
+							[
+								"class",
+								{
+									"v": "string"
+								}
+							],
+							[
+								"default",
+								{
+									"v": 5
+								}
+							]
+						],
+						"name": "x"
+					}
+				]
+			}
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#
+# name: method with @-sigil param + full rich metadata (`@x: {class: :string, default: 5}`)
+#====================================================================
+
+
+#====================================================================
+# name: method with mixed @-sigil, bare $, and @-default-shortcut params [ghi]
+# auto-assigns prepended in source order
+#
+
+#--- code -----------------------------------------------------------
+method &init(@name, $config, @soliloquy: '')
+end
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		{
+			"line": 2,
+			"method": {
+				"name": "init",
+				"params": [
+					{
+						"name": "name"
+					},
+					"config",
+					{
+						"meta": [
+							[
+								"default",
+								{
+									"value": ""
+								}
+							]
+						],
+						"name": "soliloquy"
+					}
+				],
+				"body": [
+					[
+						"scope",
+						"setat",
+						"name",
+						{
+							"var": "name"
+						}
+					],
+					[
+						"scope",
+						"setat",
+						"soliloquy",
+						{
+							"var": "soliloquy"
+						}
+					]
+				]
+			}
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM -----------------------------------------------------------
+[
+	[
+		{
+			"method": {
+				"bd": [
+					[
+						{
+							"cmd": "mc"
+						},
+						{
+							"a": [
+								{
+									"v": "name"
+								},
+								{
+									"var": "name"
+								}
+							],
+							"fn": "[]=",
+							"rcvr": {
+								"context": "bucket"
+							}
+						}
+					],
+					[
+						{
+							"cmd": "mc"
+						},
+						{
+							"a": [
+								{
+									"v": "soliloquy"
+								},
+								{
+									"var": "soliloquy"
+								}
+							],
+							"fn": "[]=",
+							"rcvr": {
+								"context": "bucket"
+							}
+						}
+					]
+				],
+				"name": "init",
+				"pm": [
+					{
+						"name": "name"
+					},
+					"config",
+					{
+						"meta": [
+							[
+								"default",
+								{
+									"v": ""
+								}
+							]
+						],
+						"name": "soliloquy"
+					}
+				]
+			}
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#
+# name: method with mixed @-sigil, bare $, and @-default-shortcut params
+# auto-assigns prepended in source order
+#====================================================================
+
+#====================================================================
 # name: amend as a standalone statement (bare target) [ghi]
 #
 
@@ -241,6 +922,8 @@ end
 						{
 							"line": 4,
 							"method": {
+								"name": "farewell",
+								"params": [],
 								"body": [
 									[
 										"scope",
@@ -261,9 +944,7 @@ end
 											"line": 3
 										}
 									]
-								],
-								"name": "farewell",
-								"params": []
+								]
 							}
 						}
 					]
@@ -342,6 +1023,8 @@ end
 						{
 							"line": 4,
 							"method": {
+								"name": "farewell",
+								"params": [],
 								"body": [
 									[
 										"scope",
@@ -362,9 +1045,7 @@ end
 											"line": 3
 										}
 									]
-								],
-								"name": "farewell",
-								"params": []
+								]
 							}
 						}
 					]
@@ -493,12 +1174,10 @@ amend $character end
 #   from Section 11:
 #     [{method: {name, params, body}}]
 #   Standalone at class-body position, the runtime attaches it to the class.
-#   Method names may be written with OR without the `&` sigil — both are
-#   equivalent:
-#     method &to_string() ... end
-#     method  to_string() ... end
-#   Both produce `{method: {name: "to_string", ...}}`. `function` and `closure`
-#   still require the `&` sigil on their names.
+#   The `&` sigil on the method name is REQUIRED — same as `function &foo`
+#   and `closure &bar`. `method to_string() ... end` (no sigil) is a parse
+#   error; consistency across all three callable-defining keywords beats
+#   saving one character.
 #
 #   `private`, `main`, `autorun` are FUNCTION CALLS (per Miko), not modifiers.
 #   Each is called with the method value as its arg and returns the modified
@@ -567,13 +1246,13 @@ $character = class # character
 	| autorun
 	| main
 
-	$to_str = method to_string()
+	$to_str = method &to_string()
 		return @rank + ' ' + @name
 	end
 
 	main $to_str
 
-	method on_close()
+	method &on_close()
 		%bucket['foo'] = &baz
 		%self.emit @name + ' exits.'
 	end
@@ -713,6 +1392,15 @@ end
 						{
 							"line": 10,
 							"method": {
+								"name": "init",
+								"params": [
+									{
+										"name": "name"
+									},
+									{
+										"name": "rank"
+									}
+								],
 								"body": [
 									[
 										"scope",
@@ -741,15 +1429,6 @@ end
 											"line": 9
 										}
 									]
-								],
-								"name": "init",
-								"params": [
-									{
-										"name": "name"
-									},
-									{
-										"name": "rank"
-									}
 								]
 							}
 						}
@@ -774,6 +1453,8 @@ end
 						{
 							"line": 17,
 							"method": {
+								"name": "greet",
+								"params": [],
 								"body": [
 									[
 										"scope",
@@ -802,9 +1483,7 @@ end
 											"line": 16
 										}
 									]
-								],
-								"name": "greet",
-								"params": []
+								]
 							}
 						}
 					],
@@ -818,6 +1497,8 @@ end
 						{
 							"line": 21,
 							"method": {
+								"name": "helper",
+								"params": [],
 								"body": [
 									[
 										"scope",
@@ -830,9 +1511,7 @@ end
 											"line": 20
 										}
 									]
-								],
-								"name": "helper",
-								"params": []
+								]
 							}
 						}
 					],
@@ -847,6 +1526,8 @@ end
 							{
 								"line": 3,
 								"method": {
+									"name": "sender",
+									"params": [],
 									"body": [
 										[
 											"scope",
@@ -859,9 +1540,7 @@ end
 												"line": 2
 											}
 										]
-									],
-									"name": "sender",
-									"params": []
+									]
 								}
 							}
 						],
@@ -875,6 +1554,8 @@ end
 								"left": {
 									"line": 29,
 									"method": {
+										"name": "whatever",
+										"params": [],
 										"body": [
 											[
 												"scope",
@@ -887,9 +1568,7 @@ end
 													"line": 28
 												}
 											]
-										],
-										"name": "whatever",
-										"params": []
+										]
 									}
 								},
 								"line": 31,
@@ -917,6 +1596,8 @@ end
 						"to_str",
 						{
 							"method": {
+								"name": "to_string",
+								"params": [],
 								"body": [
 									[
 										"scope",
@@ -945,9 +1626,7 @@ end
 											"line": 35
 										}
 									]
-								],
-								"name": "to_string",
-								"params": []
+								]
 							}
 						},
 						{
@@ -970,6 +1649,8 @@ end
 						{
 							"line": 43,
 							"method": {
+								"name": "on_close",
+								"params": [],
 								"body": [
 									[
 										{
@@ -1018,9 +1699,7 @@ end
 											"right": "emit"
 										}
 									]
-								],
-								"name": "on_close",
-								"params": []
+								]
 							}
 						}
 					]
@@ -1759,109 +2438,6 @@ $picard = $character.new(name: 'picard', rank: 'captain')
 #====================================================================
 
 
-#====================================================================
-# name: singleton method attached to a specific object [ghi]
-#
-
-#--- code -----------------------------------------------------------
-method $picard.log_entry()
-	return 'stardate ' + %now.to_s
-end
-#--------------------------------------------------------------------
-
-#--- CaspJ -----------------------------------------------------------
-[
-	[
-		{
-			"line": 3,
-			"method": {
-				"body": [
-					[
-						"scope",
-						"return",
-						{
-							"left": {
-								"line": 2,
-								"value": "stardate "
-							},
-							"line": 2,
-							"op": "+",
-							"right": {
-								"left": {
-									"line": 2,
-									"context": "now"
-								},
-								"line": 2,
-								"op": ".",
-								"right": "to_s"
-							}
-						},
-						{
-							"line": 2
-						}
-					]
-				],
-				"name": "log_entry",
-				"params": [],
-				"receiver": {
-					"var": "picard"
-				}
-			}
-		}
-	]
-]
-#--------------------------------------------------------------------
-
-#--- CaspM -----------------------------------------------------------
-[
-	[
-		{
-			"method": {
-				"bd": [
-					[
-						"scope",
-						"return",
-						[
-							{
-								"cmd": "mc"
-							},
-							{
-								"a": [
-									[
-										{
-											"cmd": "mc"
-										},
-										{
-											"fn": "to_s",
-											"rcvr": {
-												"context": "now"
-											}
-										}
-									]
-								],
-								"fn": "+",
-								"rcvr": {
-									"v": "stardate "
-								}
-							}
-						]
-					]
-				],
-				"name": "log_entry",
-				"pm": [],
-				"rcvr": {
-					"var": "picard"
-				}
-			}
-		}
-	]
-]
-#--------------------------------------------------------------------
-
-#
-# name: singleton method attached to a specific object
-#====================================================================
-
 
 # amend — extend a class in place
 #====================================================================
@@ -1887,6 +2463,8 @@ end
 						{
 							"line": 4,
 							"method": {
+								"name": "farewell",
+								"params": [],
 								"body": [
 									[
 										"scope",
@@ -1907,9 +2485,7 @@ end
 											"line": 3
 										}
 									]
-								],
-								"name": "farewell",
-								"params": []
+								]
 							}
 						}
 					]
@@ -2843,9 +3419,9 @@ end
 			"left": {
 				"line": 2,
 				"method": {
-					"body": [],
 					"name": "foo",
-					"params": []
+					"params": [],
+					"body": []
 				}
 			},
 			"line": 4,
@@ -2901,9 +3477,9 @@ end | private
 			"left": {
 				"line": 2,
 				"method": {
-					"body": [],
 					"name": "foo",
-					"params": []
+					"params": [],
+					"body": []
 				}
 			},
 			"line": 2,
@@ -2960,9 +3536,9 @@ method &foo() end | private
 			"left": {
 				"line": 1,
 				"method": {
-					"body": [],
 					"name": "foo",
-					"params": []
+					"params": [],
+					"body": []
 				}
 			},
 			"line": 1,
@@ -3021,9 +3597,9 @@ end
 				"left": {
 					"line": 2,
 					"method": {
-						"body": [],
 						"name": "whatever",
-						"params": []
+						"params": [],
+						"body": []
 					}
 				},
 				"line": 3,
@@ -6844,20 +7420,19 @@ $$foo.a.b
 #====================================================================
 
 
-# design decisions made unilaterally for Section 24:
-#
-#   - varobj atom shape: {varobj: "name"} — parallel to {var: "name"}.
-#     JSON key kept as a plain identifier (not "$$") so it's addressable
-#     from clients that can't emit special JSON keys.
-#   - $$name is tried BEFORE $name in the receiver-recognition helper, since
-#     the plain-var pattern would gobble the first $ and misparse the second.
-#   - $$name in expression AND statement position both work; $$name.attr and
-#     $$name.attr = value use the same receiver-swap approach as $-var
-#     receivers.
-#
-# Reassigning the varobj slot itself (`$$foo = X`) is NOT valid Caspian —
-# a varobj IS the slot; there is no "replace the varobj with a different
-# one" operation. The parser catches this at transpile time with a specific
-# error steering the author toward `$foo = X` (which reassigns the value
-# the slot holds). Negative fixture: parse-negative.casp § `varobj-slot
-# reassignment ($$foo = X) raises with steering hint`.
+#====================================================================
+method &init(@name, @rank)
+end
+
+[
+	{
+		"class": true,
+		"fn": "method",
+		"name": "init",
+		"params": {
+			"name": {"bucket": true},
+			"rank": {"bucket": true}
+		}
+	}
+]
+#====================================================================

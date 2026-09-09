@@ -19,11 +19,11 @@ Short version, two colors only. A real implementation would define one method pe
 
 ~~~caspian
 $colorize = class # colorize
-	method red()
+	method &red()
 		return "\e[31m" + %self + "\e[0m"
 	end
 
-	method blue()
+	method &blue()
 		return "\e[34m" + %self + "\e[0m"
 	end
 end

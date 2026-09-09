@@ -1,0 +1,331 @@
+#!/usr/bin/caspian
+
+vibecode <<EOF
+{
+	"doc":    "test_cases_parsing_loops",
+	"role":   "sibling of parse.casp holding all loop-related transpiler fixtures — begin-while / while / until / .each-with-do-block, plus their nested and single-line variants. Split out to keep parse.casp focused on core syntax; same fixture format (boxed by `#===...` outer borders, sections `#--- code ---` / `#--- CaspJ ---` / `#--- CaspM ---` or `#--- CaspM refactor ---`), read by the same parse-extract module.",
+	"status": "growing; N.times / .upto / .downto / .each control-flow deferred until the parser handles them"
+}
+EOF
+
+#====================================================================
+# Loops
+#====================================================================
+
+
+#====================================================================
+# name: integer times [ghi]
+#
+
+#--- Caspian -----------------------------------------------------------
+10.times do
+end
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+
+#--------------------------------------------------------------------
+
+#
+# name: integer times
+#====================================================================
+
+
+#====================================================================
+# name: integer times with block param [ghi]
+#
+
+#--- Caspian -----------------------------------------------------------
+10.times do ($i)
+end
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+
+#--------------------------------------------------------------------
+
+#
+# name: integer times with block param
+#====================================================================
+
+
+#====================================================================
+# name: single-line nested while-end inside while-end [ghi]
+#
+
+#--- Caspian -----------------------------------------------------------
+while &foo while &bar end end
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+
+#--------------------------------------------------------------------
+
+#
+# name: single-line nested while-end inside while-end
+#====================================================================
+
+
+#====================================================================
+# name: single-line begin-while inside while-end (do-while inside a while) [ghi]
+#
+
+#--- Caspian -----------------------------------------------------------
+while &foo begin while &bar end
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+
+#--------------------------------------------------------------------
+
+#
+# name: single-line begin-while inside while-end (do-while inside a while)
+#====================================================================
+
+
+#====================================================================
+# name: single-line while-end with binop condition and do-while with unary-not condition [ghi]
+#
+
+#--- Caspian -----------------------------------------------------------
+while &foo == true begin while ! &bar end
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+
+#--------------------------------------------------------------------
+
+#
+# name: single-line while-end with binop condition and do-while with unary-not condition
+#====================================================================
+
+
+# design decisions for Section 9 (loops):
+#
+#   Caspian is INDENT-INSENSITIVE and mostly NEWLINE-AGNOSTIC. The parser
+#   handles loops the same whether the source is spread across many lines
+#   with indentation or written on one line with no line breaks. Only
+#   heredocs care about line structure; loops do not.
+#
+#   Shapes (all use the same clause-dict — body/before/between/after/noloop —
+#   with all five keys always present, empty array when no statements):
+#
+#     while COND ... end        -> ["scope", "while",   COND, clauses]
+#     until COND ... end        -> ["scope", "until_end",   COND, clauses]
+#     begin ... while COND      -> ["scope", "begin_while", COND, clauses]
+#     begin ... until COND      -> ["scope", "begin_until", COND, clauses]
+#     begin ... end             -> ["scope", "begin_end",         clauses]
+#
+#   Disambiguation of `while COND` (opener vs do-while closer for a preceding
+#   begin) is STACK-BASED: if the top-of-stack open block is a `begin`, the
+#   `while COND` closes it as a do-while; otherwise it opens a new while-end.
+#   Same rule for `until COND`.
+#
+#   Clause markers `before` / `between` / `after` / `noloop` are keywords when
+#   they appear (anywhere) inside an open begin block; they switch the "current
+#   clause" that subsequent statements land in. Content before any marker is
+#   the `body` clause. Clause markers OUTSIDE a begin raise.
+#
+#   Still deferred (untested here): `.each do ... end`, `N.times do ... end`,
+#   `.upto`, `.downto`, `break`, `break N`, `next`, `as $loop` bindings.
+#   Section 8 (if/elsif/else/unless) and other multi-line block constructs
+#   (function/closure/class) are also deferred; they'd follow the same
+#   opener/closer stack pattern once wired in.
+
+# while and until
+#====================================================================
+# name: while loop [ghi]
+#
+
+#--- Caspian -----------------------------------------------------------
+while $x < 10
+	$x += 1
+end
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+
+#--------------------------------------------------------------------
+
+#
+# name: while loop
+#====================================================================
+
+
+#====================================================================
+# name: until loop [ghi]
+#
+
+#--- Caspian -----------------------------------------------------------
+until $ready
+	&poll
+end
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+
+#--------------------------------------------------------------------
+
+#
+# name: until loop
+#====================================================================
+
+
+# deferred: nested begin-while and dangling begin-until forms not yet parsed.
+# Target source — nested `begin ... while COND` where the inner begin's
+# terminating `while` is on its own line (dangling), with subsequent statements
+# still belonging to the outer begin:
+#
+#     begin
+#         begin
+#             $next_val = &get_next
+#             &process $next_val
+#         while $next_val != null
+#
+#         &foo
+#
+#         while &bar
+#         end
+#     end
+
+
+# deferred: expression-form `begin ... while COND` (loop-at-least-once) with
+# `as $block` controller binding usable as a value-atom on the RHS of setvar.
+# Two things not yet in the transpiler:
+#   (a) begin_while / begin_until usable as value-atoms at expression position.
+#       Currently they emit statement rows only.
+#   (b) `as $name` lifted to a dedicated `as: NAME` field on the atom (Option
+#       B — appears only when declared).
+#
+# Target source:
+#
+#     $foo = begin as $block
+#         $block.return 'my block'
+#     while $bar
+#
+# Target full CaspJ:
+#
+#     [
+#         ["scope", "setvar", "foo", {
+#             "begin_while": {
+#                 "as": "block",
+#                 "condition": {"var": "bar"},
+#                 "body": [
+#                     [{"var": "block"}, "return", {"args": [{"value": "my block"}]}]
+#                 ],
+#                 "before": [],
+#                 "between": [],
+#                 "after": [],
+#                 "noloop": []
+#             }
+#         }]
+#     ]
+
+#====================================================================
+# name: while loop with nested begin-as-var-while [ghi]
+#
+
+#--- Caspian -----------------------------------------------------------
+while &bar
+	begin as $retry_loop
+		$attempt += 1
+		&try_connect
+	while $attempt < 5
+end
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+
+#--------------------------------------------------------------------
+
+#
+# name: while loop with nested begin-as-var-while
+#====================================================================
+
+
+#====================================================================
+# name: .each with do-block parameter [ghi]
+#
+
+#--- Caspian -----------------------------------------------------------
+$items.each do ($item)
+	&handle $item
+end
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+
+#--------------------------------------------------------------------
+
+#
+# name: .each with do-block parameter
+#====================================================================
+
+
+#====================================================================
+# name: .each with do-block parameter and `as $loop` binding [ghi]
+#
+
+#--- Caspian -----------------------------------------------------------
+$items.each do ($item) as $loop
+	&emit $loop.count + ': ' + $item
+end
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+
+#--------------------------------------------------------------------
+
+#
+# name: .each with do-block parameter and `as $loop` binding
+#====================================================================
+
+
+#====================================================================
+# name: while loop with `as $loop` binding [ghi]
+#
+
+#--- Caspian -----------------------------------------------------------
+while $x < 20 as $loop
+	$x += 1
+end
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+
+#--------------------------------------------------------------------
+
+#
+# name: while loop with `as $loop` binding
+#====================================================================
+
+
+# break and break N
+# deferred: `.each do` control-flow (break / next / clause markers) not yet parsed
+# $people.each do ($person)
+# 	if $person.suspicious?
+# 		break
+# 	end
+# end
+
+#====================================================================
+# name: nested .each do with break 2 [ghi]
+#
+
+#--- Caspian -----------------------------------------------------------
+$people.each do ($person) as $person_loop
+	$person.addresses.each do ($address)
+		if $address.matches($target)
+			break 2
+		end
+	end
+end
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+
+#--------------------------------------------------------------------
+
+#
+# name: nested .each do with break 2
+#====================================================================

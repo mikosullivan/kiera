@@ -28,6 +28,10 @@ end
 	[
 		{
 			"function": {
+				"name": "welcome",
+				"params": [
+					"name"
+				],
 				"body": [
 					[
 						"scope",
@@ -48,10 +52,6 @@ end
 							"line": 2
 						}
 					]
-				],
-				"name": "welcome",
-				"params": [
-					"name"
 				]
 			},
 			"line": 3
@@ -107,6 +107,8 @@ end
 	[
 		{
 			"function": {
+				"name": "greet",
+				"params": [],
 				"body": [
 					[
 						"scope",
@@ -119,9 +121,7 @@ end
 							"line": 2
 						}
 					]
-				],
-				"name": "greet",
-				"params": []
+				]
 			},
 			"line": 3
 		}
@@ -169,6 +169,11 @@ end
 	[
 		{
 			"function": {
+				"name": "add",
+				"params": [
+					"a",
+					"b"
+				],
 				"body": [
 					[
 						"scope",
@@ -189,11 +194,6 @@ end
 							"line": 2
 						}
 					]
-				],
-				"name": "add",
-				"params": [
-					"a",
-					"b"
 				]
 			},
 			"line": 3
@@ -249,6 +249,10 @@ end
 	[
 		{
 			"closure": {
+				"name": "make_prefixer",
+				"params": [
+					"name"
+				],
 				"body": [
 					[
 						"scope",
@@ -269,10 +273,6 @@ end
 							"line": 2
 						}
 					]
-				],
-				"name": "make_prefixer",
-				"params": [
-					"name"
 				]
 			},
 			"line": 3
@@ -314,67 +314,6 @@ end
 
 
 #====================================================================
-# name: method sugar form (method &name) [ghi]
-# only form available for methods
-#
-
-#--- code -----------------------------------------------------------
-method &init($name, $rank)
-	return null
-end
-#--------------------------------------------------------------------
-
-#--- CaspJ -----------------------------------------------------------
-[
-	[
-		{
-			"line": 3,
-			"method": {
-				"body": [
-					[
-						"scope",
-						"return",
-						{
-							"line": 2,
-							"value": null
-						},
-						{
-							"line": 2
-						}
-					]
-				],
-				"name": "init",
-				"params": [
-					"name",
-					"rank"
-				]
-			}
-		}
-	]
-]
-#--------------------------------------------------------------------
-
-#--- CaspM refactor --------------------------------------------------
-[
-	{
-		"frame": true,
-		"fn": "method",
-		"name": "init",
-		"params": {"name": {}, "rank": {}},
-		"body": [
-			{"bwc": "return", "args": [[{"primitive": null}]]}
-		]
-	}
-]
-#--------------------------------------------------------------------
-
-#
-# name: method sugar form (method &name)
-# only form available for methods
-#====================================================================
-
-
-#====================================================================
 # name: empty function body [ghi]
 #
 
@@ -388,9 +327,9 @@ end
 	[
 		{
 			"function": {
-				"body": [],
 				"name": "noop",
-				"params": []
+				"params": [],
+				"body": []
 			},
 			"line": 2
 		}
@@ -422,1129 +361,8 @@ end
 
 
 #====================================================================
-# name: method name without & sigil (bareword name [ghi]
-# & is optional for method)
-#
-
-#--- code -----------------------------------------------------------
-method to_string()
-	return 'hi'
+method &foo($bar, &gup)
 end
-#--------------------------------------------------------------------
-
-#--- CaspJ -----------------------------------------------------------
-[
-	[
-		{
-			"line": 3,
-			"method": {
-				"body": [
-					[
-						"scope",
-						"return",
-						{
-							"line": 2,
-							"value": "hi"
-						},
-						{
-							"line": 2
-						}
-					]
-				],
-				"name": "to_string",
-				"params": []
-			}
-		}
-	]
-]
-#--------------------------------------------------------------------
-
-#--- CaspM -----------------------------------------------------------
-[
-	[
-		{
-			"method": {
-				"bd": [
-					[
-						"scope",
-						"return",
-						{
-							"v": "hi"
-						}
-					]
-				],
-				"name": "to_string",
-				"pm": []
-			}
-		}
-	]
-]
-#--------------------------------------------------------------------
-
-#
-# name: method name without & sigil (bareword name
-# & is optional for method)
-#====================================================================
-
-
-#====================================================================
-# name: singleton method [ghi]
-# receiver.name signature attaches method to a specific object
-#
-
-#--- code -----------------------------------------------------------
-method $picard.log_entry()
-	return 'stardate ' + %now.to_s
-end
-#--------------------------------------------------------------------
-
-#--- CaspJ -----------------------------------------------------------
-[
-	[
-		{
-			"line": 3,
-			"method": {
-				"body": [
-					[
-						"scope",
-						"return",
-						{
-							"left": {
-								"line": 2,
-								"value": "stardate "
-							},
-							"line": 2,
-							"op": "+",
-							"right": {
-								"left": {
-									"line": 2,
-									"context": "now"
-								},
-								"line": 2,
-								"op": ".",
-								"right": "to_s"
-							}
-						},
-						{
-							"line": 2
-						}
-					]
-				],
-				"name": "log_entry",
-				"params": [],
-				"receiver": {
-					"var": "picard"
-				}
-			}
-		}
-	]
-]
-#--------------------------------------------------------------------
-
-#--- CaspM -----------------------------------------------------------
-[
-	[
-		{
-			"method": {
-				"bd": [
-					[
-						"scope",
-						"return",
-						[
-							{
-								"cmd": "mc"
-							},
-							{
-								"a": [
-									[
-										{
-											"cmd": "mc"
-										},
-										{
-											"fn": "to_s",
-											"rcvr": {
-												"context": "now"
-											}
-										}
-									]
-								],
-								"fn": "+",
-								"rcvr": {
-									"v": "stardate "
-								}
-							}
-						]
-					]
-				],
-				"name": "log_entry",
-				"pm": [],
-				"rcvr": {
-					"var": "picard"
-				}
-			}
-		}
-	]
-]
-#--------------------------------------------------------------------
-
-#
-# name: singleton method
-# receiver.name signature attaches method to a specific object
-#====================================================================
-
-
-#====================================================================
-# name: @name (at-sigil atom) as expression on RHS of setvar [ghi]
-#
-
-#--- code -----------------------------------------------------------
-$x = @name
-#--------------------------------------------------------------------
-
-#--- CaspJ -----------------------------------------------------------
-[
-	[
-		"scope",
-		"setvar",
-		"x",
-		{
-			"at": "name",
-			"line": 1
-		},
-		{
-			"line": 1
-		}
-	]
-]
-#--------------------------------------------------------------------
-
-#--- CaspM refactor --------------------------------------------------
-[
-	{
-		"frame": true,
-		"fn": "=",
-		"syn": true,
-		"args": [
-			"x",
-			[
-				{
-					"bucket": true,
-					"fn": "[]",
-					"syn": true,
-					"args": [[{"primitive": "name"}]]
-				}
-			]
-		]
-	}
-]
-#--------------------------------------------------------------------
-
-#
-# name: @name (at-sigil atom) as expression on RHS of setvar
-#====================================================================
-
-
-#====================================================================
-# name: @name = value [ghi]
-# class-field assignment (setat verb)
-#
-
-#--- code -----------------------------------------------------------
-@name = 'foo'
-#--------------------------------------------------------------------
-
-#--- CaspJ -----------------------------------------------------------
-[
-	[
-		"scope",
-		"setat",
-		"name",
-		{
-			"line": 1,
-			"value": "foo"
-		},
-		{
-			"line": 1
-		}
-	]
-]
-#--------------------------------------------------------------------
-
-#--- CaspM refactor --------------------------------------------------
-[
-	{
-		"bucket": true,
-		"fn": "[]=",
-		"syn": true,
-		"args": [[{"primitive": "name"}], [{"primitive": "foo"}]]
-	}
-]
-#--------------------------------------------------------------------
-
-#
-# name: @name = value
-# class-field assignment (setat verb)
-#====================================================================
-
-
-#====================================================================
-# name: @name = expression (setat with binop RHS) [ghi]
-#
-
-#--- code -----------------------------------------------------------
-@total = @count + 1
-#--------------------------------------------------------------------
-
-#--- CaspJ -----------------------------------------------------------
-[
-	[
-		"scope",
-		"setat",
-		"total",
-		{
-			"left": {
-				"at": "count",
-				"line": 1
-			},
-			"line": 1,
-			"op": "+",
-			"right": {
-				"line": 1,
-				"value": 1
-			}
-		},
-		{
-			"line": 1
-		}
-	]
-]
-#--------------------------------------------------------------------
-
-#--- CaspM refactor --------------------------------------------------
-[
-	{
-		"bucket": true,
-		"fn": "[]=",
-		"syn": true,
-		"args": [
-			[{"primitive": "total"}],
-			[
-				{"bucket": true, "fn": "[]", "syn": true, "args": [[{"primitive": "count"}]]},
-				{"rv": true, "fn": "+", "syn": true, "args": [[{"primitive": 1}]]}
-			]
-		]
-	}
-]
-#--------------------------------------------------------------------
-
-#
-# name: @name = expression (setat with binop RHS)
-#====================================================================
-
-
-#====================================================================
-# name: at-field subscript get [ghi]
-# `@foo['bar']` — subscript access on an @-field. `@foo` is sugar for
-# `%bucket['foo']`, so `@foo['bar']` is `%bucket['foo']['bar']` — a
-# subscript-get on a subscript-get. Both `[]` calls survive to norm.
-#
-
-#--- code -----------------------------------------------------------
-@foo['bar']
-#--------------------------------------------------------------------
-
-#--- CaspJ -----------------------------------------------------------
-[
-	[
-		{
-			"at": "foo",
-			"line": 1
-		},
-		"[]",
-		{
-			"args": [
-				{
-					"line": 1,
-					"value": "bar"
-				}
-			]
-		},
-		{
-			"line": 1
-		}
-	]
-]
-#--------------------------------------------------------------------
-
-#--- CaspM refactor --------------------------------------------------
-[
-	{
-		"bucket": true,
-		"fn": "[]",
-		"syn": true,
-		"args": [[{"primitive": "foo"}]]
-	},
-	{
-		"rv": true,
-		"fn": "[]",
-		"args": [[{"primitive": "bar"}]]
-	}
-]
-#--------------------------------------------------------------------
-
-#
-# name: at-field subscript get
-#====================================================================
-
-
-#====================================================================
-# name: at-field subscript set [ghi]
-# `@foo['bar'] = 'whatever'` — subscript-set on an @-field. Same
-# desugar rule as above; norm produces two nested `[]` gets around a
-# top-level `[]=`.
-#
-
-#--- code -----------------------------------------------------------
-@foo['bar'] = 'whatever'
-#--------------------------------------------------------------------
-
-#--- CaspJ -----------------------------------------------------------
-[
-	[
-		{
-			"at": "foo"
-		},
-		"[]=",
-		{
-			"args": [
-				{
-					"line": 1,
-					"value": "bar"
-				},
-				{
-					"line": 1,
-					"value": "whatever"
-				}
-			]
-		},
-		{
-			"line": 1
-		}
-	]
-]
-#--------------------------------------------------------------------
-
-#--- CaspM -----------------------------------------------------------
-[
-	[
-		{
-			"cmd": "mc"
-		},
-		{
-			"a": [
-				{
-					"v": "bar"
-				},
-				{
-					"v": "whatever"
-				}
-			],
-			"fn": "[]=",
-			"rcvr": [
-				{
-					"cmd": "mc"
-				},
-				{
-					"a": [
-						{
-							"v": "foo"
-						}
-					],
-					"fn": "[]",
-					"rcvr": {
-						"context": "bucket"
-					}
-				}
-			]
-		}
-	]
-]
-#--------------------------------------------------------------------
-
-#
-# name: at-field subscript set
-#====================================================================
-
-
-#====================================================================
-# name: at-field subscript then method access [ghi]
-# `@foo['bar'].length` — subscript-get on an @-field followed by a
-# dot-method call. Chains a `.length` on top of the two nested `[]`
-# gets from the previous fixture.
-#
-
-#--- code -----------------------------------------------------------
-@foo['bar'].length
-#--------------------------------------------------------------------
-
-#--- CaspJ -----------------------------------------------------------
-[
-	[
-		{
-			"left": [
-				{
-					"at": "foo",
-					"line": 1
-				},
-				"[]",
-				{
-					"args": [
-						{
-							"line": 1,
-							"value": "bar"
-						}
-					]
-				}
-			],
-			"line": 1,
-			"op": ".",
-			"right": "length"
-		}
-	]
-]
-#--------------------------------------------------------------------
-
-#--- CaspM -----------------------------------------------------------
-[
-	[
-		[
-			{
-				"cmd": "mc"
-			},
-			{
-				"fn": "length",
-				"rcvr": [
-					{
-						"cmd": "mc"
-					},
-					{
-						"a": [
-							{
-								"v": "bar"
-							}
-						],
-						"fn": "[]",
-						"rcvr": [
-							{
-								"cmd": "mc"
-							},
-							{
-								"a": [
-									{
-										"v": "foo"
-									}
-								],
-								"fn": "[]",
-								"rcvr": {
-									"context": "bucket"
-								}
-							}
-						]
-					}
-				]
-			}
-		]
-	]
-]
-#--------------------------------------------------------------------
-
-#
-# name: at-field subscript then method access
-#====================================================================
-
-
-#====================================================================
-# name: at-field subscript set with subscript-then-method RHS [ghi]
-# `@foo['gup'] = @foo['bar'].length` — the LHS is a subscript-set on
-# an @-field; the RHS is a subscript-then-method chain on the same
-# @-field. Exercises the whole `@name['k']`/`@name['k'] = v`/
-# `@name['k'].method` surface end-to-end.
-#
-
-#--- code -----------------------------------------------------------
-@foo['gup'] = @foo['bar'].length
-#--------------------------------------------------------------------
-
-#--- CaspJ -----------------------------------------------------------
-[
-	[
-		{
-			"at": "foo"
-		},
-		"[]=",
-		{
-			"args": [
-				{
-					"line": 1,
-					"value": "gup"
-				},
-				{
-					"left": [
-						{
-							"at": "foo",
-							"line": 1
-						},
-						"[]",
-						{
-							"args": [
-								{
-									"line": 1,
-									"value": "bar"
-								}
-							],
-							"line": 1
-						}
-					],
-					"line": 1,
-					"op": ".",
-					"right": "length"
-				}
-			]
-		},
-		{
-			"line": 1
-		}
-	]
-]
-#--------------------------------------------------------------------
-
-#--- CaspM -----------------------------------------------------------
-[
-	[
-		{
-			"cmd": "mc"
-		},
-		{
-			"a": [
-				{
-					"v": "gup"
-				},
-				[
-					{
-						"cmd": "mc"
-					},
-					{
-						"fn": "length",
-						"rcvr": [
-							{
-								"cmd": "mc"
-							},
-							{
-								"a": [
-									{
-										"v": "bar"
-									}
-								],
-								"fn": "[]",
-								"rcvr": [
-									{
-										"cmd": "mc"
-									},
-									{
-										"a": [
-											{
-												"v": "foo"
-											}
-										],
-										"fn": "[]",
-										"rcvr": {
-											"context": "bucket"
-										}
-									}
-								]
-							}
-						]
-					}
-				]
-			],
-			"fn": "[]=",
-			"rcvr": [
-				{
-					"cmd": "mc"
-				},
-				{
-					"a": [
-						{
-							"v": "foo"
-						}
-					],
-					"fn": "[]",
-					"rcvr": {
-						"context": "bucket"
-					}
-				}
-			]
-		}
-	]
-]
-#--------------------------------------------------------------------
-
-#
-# name: at-field subscript set with subscript-then-method RHS
-#====================================================================
-
-
-#====================================================================
-# name: method with @-sigil param [ghi]
-# auto-assign desugars to `["scope", "setat", name, {var: name}]` at body start
-#
-
-#--- code -----------------------------------------------------------
-method &init(@name, @rank)
-end
-#--------------------------------------------------------------------
-
-#--- CaspJ -----------------------------------------------------------
-[
-	[
-		{
-			"line": 2,
-			"method": {
-				"body": [
-					[
-						"scope",
-						"setat",
-						"name",
-						{
-							"var": "name"
-						}
-					],
-					[
-						"scope",
-						"setat",
-						"rank",
-						{
-							"var": "rank"
-						}
-					]
-				],
-				"name": "init",
-				"params": [
-					{
-						"name": "name"
-					},
-					{
-						"name": "rank"
-					}
-				]
-			}
-		}
-	]
-]
-#--------------------------------------------------------------------
-
-#--- CaspM -----------------------------------------------------------
-[
-	[
-		{
-			"method": {
-				"bd": [
-					[
-						{
-							"cmd": "mc"
-						},
-						{
-							"a": [
-								{
-									"v": "name"
-								},
-								{
-									"var": "name"
-								}
-							],
-							"fn": "[]=",
-							"rcvr": {
-								"context": "bucket"
-							}
-						}
-					],
-					[
-						{
-							"cmd": "mc"
-						},
-						{
-							"a": [
-								{
-									"v": "rank"
-								},
-								{
-									"var": "rank"
-								}
-							],
-							"fn": "[]=",
-							"rcvr": {
-								"context": "bucket"
-							}
-						}
-					]
-				],
-				"name": "init",
-				"pm": [
-					{
-						"name": "name"
-					},
-					{
-						"name": "rank"
-					}
-				]
-			}
-		}
-	]
-]
-#--------------------------------------------------------------------
-
-#
-# name: method with @-sigil param
-# auto-assign desugars to a `%bucket[name] = <arg>` `[]=` call in the body
-#====================================================================
-
-
-#====================================================================
-# name: method with @-sigil param default-shortcut [ghi]
-# `@name: value` maps to `{default: value}` metadata
-#
-
-#--- code -----------------------------------------------------------
-method &init(@soliloquy: '')
-end
-#--------------------------------------------------------------------
-
-#--- CaspJ -----------------------------------------------------------
-[
-	[
-		{
-			"line": 2,
-			"method": {
-				"body": [
-					[
-						"scope",
-						"setat",
-						"soliloquy",
-						{
-							"var": "soliloquy"
-						}
-					]
-				],
-				"name": "init",
-				"params": [
-					{
-						"meta": [
-							[
-								"default",
-								{
-									"value": ""
-								}
-							]
-						],
-						"name": "soliloquy"
-					}
-				]
-			}
-		}
-	]
-]
-#--------------------------------------------------------------------
-
-#--- CaspM -----------------------------------------------------------
-[
-	[
-		{
-			"method": {
-				"bd": [
-					[
-						{
-							"cmd": "mc"
-						},
-						{
-							"a": [
-								{
-									"v": "soliloquy"
-								},
-								{
-									"var": "soliloquy"
-								}
-							],
-							"fn": "[]=",
-							"rcvr": {
-								"context": "bucket"
-							}
-						}
-					]
-				],
-				"name": "init",
-				"pm": [
-					{
-						"meta": [
-							[
-								"default",
-								{
-									"v": ""
-								}
-							]
-						],
-						"name": "soliloquy"
-					}
-				]
-			}
-		}
-	]
-]
-#--------------------------------------------------------------------
-
-#
-# name: method with @-sigil param default-shortcut
-# `@name: value` maps to `{default: value}` metadata
-#====================================================================
-
-
-#====================================================================
-# name: method with @-sigil param + full rich metadata (`@x: {class: :string, default: 5}`) [ghi]
-#
-
-#--- code -----------------------------------------------------------
-method &init(@x: {class: :string, default: 5})
-end
-#--------------------------------------------------------------------
-
-#--- CaspJ -----------------------------------------------------------
-[
-	[
-		{
-			"line": 2,
-			"method": {
-				"body": [
-					[
-						"scope",
-						"setat",
-						"x",
-						{
-							"var": "x"
-						}
-					]
-				],
-				"name": "init",
-				"params": [
-					{
-						"meta": [
-							[
-								"class",
-								{
-									"value": "string"
-								}
-							],
-							[
-								"default",
-								{
-									"value": 5
-								}
-							]
-						],
-						"name": "x"
-					}
-				]
-			}
-		}
-	]
-]
-#--------------------------------------------------------------------
-
-#--- CaspM -----------------------------------------------------------
-[
-	[
-		{
-			"method": {
-				"bd": [
-					[
-						{
-							"cmd": "mc"
-						},
-						{
-							"a": [
-								{
-									"v": "x"
-								},
-								{
-									"var": "x"
-								}
-							],
-							"fn": "[]=",
-							"rcvr": {
-								"context": "bucket"
-							}
-						}
-					]
-				],
-				"name": "init",
-				"pm": [
-					{
-						"meta": [
-							[
-								"class",
-								{
-									"v": "string"
-								}
-							],
-							[
-								"default",
-								{
-									"v": 5
-								}
-							]
-						],
-						"name": "x"
-					}
-				]
-			}
-		}
-	]
-]
-#--------------------------------------------------------------------
-
-#
-# name: method with @-sigil param + full rich metadata (`@x: {class: :string, default: 5}`)
-#====================================================================
-
-
-#====================================================================
-# name: method with mixed @-sigil, bare $, and @-default-shortcut params [ghi]
-# auto-assigns prepended in source order
-#
-
-#--- code -----------------------------------------------------------
-method &init(@name, $config, @soliloquy: '')
-end
-#--------------------------------------------------------------------
-
-#--- CaspJ -----------------------------------------------------------
-[
-	[
-		{
-			"line": 2,
-			"method": {
-				"body": [
-					[
-						"scope",
-						"setat",
-						"name",
-						{
-							"var": "name"
-						}
-					],
-					[
-						"scope",
-						"setat",
-						"soliloquy",
-						{
-							"var": "soliloquy"
-						}
-					]
-				],
-				"name": "init",
-				"params": [
-					{
-						"name": "name"
-					},
-					"config",
-					{
-						"meta": [
-							[
-								"default",
-								{
-									"value": ""
-								}
-							]
-						],
-						"name": "soliloquy"
-					}
-				]
-			}
-		}
-	]
-]
-#--------------------------------------------------------------------
-
-#--- CaspM -----------------------------------------------------------
-[
-	[
-		{
-			"method": {
-				"bd": [
-					[
-						{
-							"cmd": "mc"
-						},
-						{
-							"a": [
-								{
-									"v": "name"
-								},
-								{
-									"var": "name"
-								}
-							],
-							"fn": "[]=",
-							"rcvr": {
-								"context": "bucket"
-							}
-						}
-					],
-					[
-						{
-							"cmd": "mc"
-						},
-						{
-							"a": [
-								{
-									"v": "soliloquy"
-								},
-								{
-									"var": "soliloquy"
-								}
-							],
-							"fn": "[]=",
-							"rcvr": {
-								"context": "bucket"
-							}
-						}
-					]
-				],
-				"name": "init",
-				"pm": [
-					{
-						"name": "name"
-					},
-					"config",
-					{
-						"meta": [
-							[
-								"default",
-								{
-									"v": ""
-								}
-							]
-						],
-						"name": "soliloquy"
-					}
-				]
-			}
-		}
-	]
-]
-#--------------------------------------------------------------------
-
-#
-# name: method with mixed @-sigil, bare $, and @-default-shortcut params
-# auto-assigns prepended in source order
 #====================================================================
 
 
@@ -1554,7 +372,7 @@ end
 #
 
 #--- code -----------------------------------------------------------
-function &fetch($url: {class: :string})
+function &fetch($url: {class: 'string'})
 	&get $url
 end
 #--------------------------------------------------------------------
@@ -1564,20 +382,6 @@ end
 	[
 		{
 			"function": {
-				"body": [
-					[
-						{
-							"amp": "get"
-						},
-						{
-							"line": 2,
-							"var": "url"
-						},
-						{
-							"line": 2
-						}
-					]
-				],
 				"name": "fetch",
 				"params": [
 					{
@@ -1591,6 +395,20 @@ end
 						],
 						"name": "url"
 					}
+				],
+				"body": [
+					[
+						{
+							"amp": "get"
+						},
+						{
+							"line": 2,
+							"var": "url"
+						},
+						{
+							"line": 2
+						}
+					]
 				]
 			},
 			"line": 3
@@ -1662,7 +480,6 @@ end
 	[
 		{
 			"function": {
-				"body": [],
 				"name": "fetch",
 				"params": [
 					{
@@ -1694,7 +511,8 @@ end
 						"name": "timeout"
 					},
 					"opts"
-				]
+				],
+				"body": []
 			},
 			"line": 2
 		}
@@ -1766,6 +584,26 @@ end
 	[
 		{
 			"closure": {
+				"name": "make_greeter",
+				"params": [
+					{
+						"meta": [
+							[
+								"class",
+								{
+									"value": "string"
+								}
+							],
+							[
+								"default",
+								{
+									"value": "hello, "
+								}
+							]
+						],
+						"name": "prefix"
+					}
+				],
 				"body": [
 					[
 						"scope",
@@ -1786,26 +624,6 @@ end
 							"line": 2
 						}
 					]
-				],
-				"name": "make_greeter",
-				"params": [
-					{
-						"meta": [
-							[
-								"class",
-								{
-									"value": "string"
-								}
-							],
-							[
-								"default",
-								{
-									"value": "hello, "
-								}
-							]
-						],
-						"name": "prefix"
-					}
 				]
 			},
 			"line": 3
@@ -1887,7 +705,6 @@ end
 	[
 		{
 			"function": {
-				"body": [],
 				"name": "foo",
 				"params": [
 					"x",
@@ -1895,7 +712,8 @@ end
 						"name": "args",
 						"splat": true
 					}
-				]
+				],
+				"body": []
 			},
 			"line": 2
 		}
@@ -1944,14 +762,14 @@ end
 	[
 		{
 			"function": {
-				"body": [],
 				"name": "foo",
 				"params": [
 					{
 						"kwsplat": true,
 						"name": "opts"
 					}
-				]
+				],
+				"body": []
 			},
 			"line": 2
 		}
@@ -1998,7 +816,6 @@ end
 	[
 		{
 			"function": {
-				"body": [],
 				"name": "foo",
 				"params": [
 					"x",
@@ -2010,7 +827,8 @@ end
 						"kwsplat": true,
 						"name": "opts"
 					}
-				]
+				],
+				"body": []
 			},
 			"line": 2
 		}
@@ -2062,7 +880,6 @@ end
 	[
 		{
 			"function": {
-				"body": [],
 				"name": "foo",
 				"params": [
 					{
@@ -2077,7 +894,8 @@ end
 						"name": "args",
 						"splat": true
 					}
-				]
+				],
+				"body": []
 			},
 			"line": 2
 		}
@@ -2127,9 +945,9 @@ end
 $rich_params = function(
 	$name,
 	$rank: {optional: true, default: 'ensign'},
-	$sent_title: {public_name: 'title'},
-	$eager_left: {lazy: true},
-	$eager_right: {lazy: true},
+	$sent_title: {public: 'title'},
+	&lazy_left,
+	&lazy_right,
 	*$args,
 	**$opts,
 	)
@@ -2145,40 +963,6 @@ end
 		"rich_params",
 		{
 			"function": {
-				"body": [
-					[
-						"scope",
-						"return",
-						{
-							"array": [
-								{
-									"line": 10,
-									"var": "name"
-								},
-								{
-									"line": 10,
-									"var": "rank"
-								},
-								{
-									"line": 10,
-									"var": "sent_title"
-								},
-								{
-									"line": 10,
-									"var": "rest"
-								},
-								{
-									"line": 10,
-									"var": "opts"
-								}
-							],
-							"line": 10
-						},
-						{
-							"line": 10
-						}
-					]
-				],
 				"params": [
 					"name",
 					{
@@ -2218,7 +1002,7 @@ end
 								}
 							]
 						],
-						"name": "eager_left"
+						"name": "lazy_left"
 					},
 					{
 						"meta": [
@@ -2229,7 +1013,7 @@ end
 								}
 							]
 						],
-						"name": "eager_right"
+						"name": "lazy_right"
 					},
 					{
 						"name": "args",
@@ -2239,6 +1023,40 @@ end
 						"kwsplat": true,
 						"name": "opts"
 					}
+				],
+				"body": [
+					[
+						"scope",
+						"return",
+						{
+							"array": [
+								{
+									"line": 10,
+									"var": "name"
+								},
+								{
+									"line": 10,
+									"var": "rank"
+								},
+								{
+									"line": 10,
+									"var": "sent_title"
+								},
+								{
+									"line": 10,
+									"var": "rest"
+								},
+								{
+									"line": 10,
+									"var": "opts"
+								}
+							],
+							"line": 10
+						},
+						{
+							"line": 10
+						}
+					]
 				]
 			}
 		},
@@ -2322,7 +1140,7 @@ end
 								}
 							]
 						],
-						"name": "eager_left"
+						"name": "lazy_left"
 					},
 					{
 						"meta": [
@@ -2333,7 +1151,7 @@ end
 								}
 							]
 						],
-						"name": "eager_right"
+						"name": "lazy_right"
 					},
 					{
 						"name": "args",
@@ -2377,6 +1195,9 @@ end
 		"greet",
 		{
 			"function": {
+				"params": [
+					"name"
+				],
 				"body": [
 					[
 						"scope",
@@ -2397,9 +1218,6 @@ end
 							"line": 2
 						}
 					]
-				],
-				"params": [
-					"name"
 				]
 			}
 		},
@@ -2457,7 +1275,6 @@ end
 # `$name = function(...) end`
 #====================================================================
 
-
 #====================================================================
 # name: long-form closure assignment [ghi]
 # `$name = closure(...) end`
@@ -2477,6 +1294,9 @@ end
 		"make_prefixer",
 		{
 			"closure": {
+				"params": [
+					"name"
+				],
 				"body": [
 					[
 						"scope",
@@ -2497,9 +1317,6 @@ end
 							"line": 2
 						}
 					]
-				],
-				"params": [
-					"name"
 				]
 			}
 		},
@@ -2558,47 +1375,63 @@ end
 #====================================================================
 
 
-# design decisions for Section 11 (functions, closures, methods):
+#====================================================================
+# name: function sugar form with a lazy param (`&read`) [ghi]
+# `&` in param position declares laziness. Callee-side param spec
+# carries `lazy: true`; caller-side is unchanged from the "args are
+# always step-lists" rule (see atom-keys). Full mechanism in the
+# sprint's lazy-mechanism doc.
 #
-#   Two orthogonal axes to preserve in CaspJ:
+
+#--- code -----------------------------------------------------------
+function &foo($idx, &read)
+end
+#--------------------------------------------------------------------
+
+#--- CaspJ -----------------------------------------------------------
+[
+	[
+		{
+			"function": {
+				"name": "foo",
+				"params": [
+					{
+						"name": "idx"
+					},
+					{
+						"name": "read",
+						"lazy": true
+					}
+				],
+				"body": []
+			},
+			"line": 2
+		}
+	]
+]
+#--------------------------------------------------------------------
+
+#--- CaspM refactor --------------------------------------------------
+[
+	{
+		"frame": true,
+		"fn": "function",
+		"name": "foo",
+		"params": {
+			"idx": {},
+			"read": {"lazy": true}
+		},
+		"body": []
+	},
+	{
+		"frame": true,
+		"fn": "=",
+		"syn": true,
+		"args": ["foo", [{"rv": true}]]
+	}
+]
+#--------------------------------------------------------------------
+
 #
-#   1. Which SYNTACTIC FORM the developer used (setvar-verb):
-#        setvar   — long form:  `$foo = function(...) ... end`
-#        def      — sugar form: `function &foo(...) ... end`
-#      Both do the same thing (create a callable, bind it to the variable);
-#      CaspJ preserves which form was written.
-#
-#   2. Which KIND of callable was created (value-atom key):
-#        {function: {params, body}}  — plain function (no scope capture)
-#        {closure:  {params, body}}  — closure (captures the enclosing scope)
-#        {method:   {params, body}}  — method (only ever appears via the def
-#                                       verb; there is no long-form
-#                                       `$foo = method(...)`)
-#
-#   Combined shape:  ["scope", <verb>, <name>, {<kind>: {params, body}}]
-#
-#   Params in V1: a list where each entry is either a plain string (bare
-#   param name, no metadata) or an object `{name: "x", meta: [[k, v], ...]}`
-#   (param with rich metadata). The `$` sigil is a use-site concern and
-#   isn't stored on the param entry.
-#
-#   Rich metadata syntax: `$name: {class: :string, default: 5, ...}` — colon
-#   after the param name, then a hash literal. Values in the metadata hash
-#   are parsed as value-atoms; the runtime interprets them at call time
-#   (`default:` re-runs per call, per parameter-defaults rule; `class:` is
-#   a constant type constraint). `meta` is a list of `[key, value_atom]`
-#   pairs — same shape convention as call-site `kw` and heredoc paren-block
-#   kwargs.
-#
-#   Splat params: `*$args` (positional collector) and `**$opts` (kwargs
-#   collector) at the param declaration site. Shape mirrors the rich-
-#   metadata form with a `splat: true` or `kwsplat: true` flag:
-#     *$args         -> {name: "args", splat: true}
-#     **$opts        -> {name: "opts", kwsplat: true}
-#     *$args: {...}  -> {name: "args", splat: true, meta: [...]}
-#   Semantically the DECLARATION-side inverse of the call-site splat atoms
-#   from Section 12 — declaration collects, call spreads.
-#
-# The composite `$rich_params = function(...) end` example that exercises every
-# rich-param feature (metadata + splat + kwsplat + long-form assignment) is
-# now a fixture above; the survey block previously here has been promoted.
+# name: function sugar form with a lazy param (`&read`)
+#====================================================================

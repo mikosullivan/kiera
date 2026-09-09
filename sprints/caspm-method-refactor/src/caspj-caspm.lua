@@ -81,7 +81,11 @@ local KEY_MAP = {
 	varobj    = "vo",
 	begin_end = "be",
 	splat     = "sp",
-	receiver  = "rcvr",
+	-- `receiver -> rcvr` used to live here for the retired `method $obj.name()`
+	-- singleton form. That form no longer exists in Caspian source; the parser
+	-- refuses it, so no CaspJ input should carry a `receiver:` field on a
+	-- method-def object. If one does show up we reject it explicitly rather
+	-- than passively renaming it — see the `receiver`-key check below.
 	["function"] = "fn",
 }
 
@@ -765,6 +769,14 @@ transpile_atom = function(v)
 	if v.op ~= nil and v.operand ~= nil
 			and v.left == nil and v.right == nil then
 		return {{["cmd"] = "mc"}, {fn = v.op, rcvr = transpile_sub(v.operand), syn = true}}
+	end
+
+	-- Retired singleton-method form: `method $obj.name(...) ... end` used to
+	-- emit a method-def object carrying a `receiver` field. That form is gone
+	-- from Caspian source; reject any CaspJ input that still has it rather
+	-- than silently normalizing it.
+	if v.method ~= nil and type(v.method) == "table" and v.method.receiver ~= nil then
+		error("caspj-caspm: `method` object carries a `receiver` field — the singleton `method $obj.name(...)` form is retired; use `amend $obj.obj.shadow ... method &name() ... end ... end` instead")
 	end
 
 	-- Generic object atom: recurse into fields, drop cosmetic flags, rename

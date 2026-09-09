@@ -4,7 +4,7 @@
 ~~~vibecode
 {"vibecode": {
 	"doc": "requirements_classes_definition",
-	"role": "spec for how classes are defined in Caspian — the `class ... end` DSL, the inline `# label` convention, the DSL bare-word commands active inside the class body (field, method, private, inherits, abstract), field declarations with their constraints, method definitions, private methods (chainable via the `private method foo()` DSL prefix that transforms the method object it receives), inheritance (single and multiple), engine-invoked hooks (init, to_string, on_close), abstract classes, auto-getters/setters, the `.call` method convention (defining a method named `.call` makes an instance amp-invocable — `&$instance(args)` desugars to `$instance.call(args)` at CaspM time, no runtime property lookup), how a class body becomes the class object that appears in an instance's stack, declarations targeting the class itself — `@x = v` sets the class's bucket, `method %self.foo()` attaches a singleton method to the class, `%self.obj.field :x, ...` adds a field to the class-as-instance — with the underlying rule that `%self` is the class inside a class body and any object-op works against it, and the `amend $var ... end` construct that extends an existing class with additional declarations (Ruby-style class reopening; mutation-vs-derived-class semantics still open). Uniqueness constraints and the `join` shorthand are Mikobase concepts and are not part of the Caspian class model.",
+	"role": "spec for how classes are defined in Caspian — the `class ... end` DSL, the inline `# label` convention, the DSL bare-word commands active inside the class body (field, method, private, inherits, abstract), field declarations with their constraints, method definitions, private methods (chainable via the `private method &foo()` DSL prefix that transforms the method object it receives), inheritance (single and multiple), engine-invoked hooks (init, to_string, on_close), abstract classes, auto-getters/setters, the `.call` method convention (defining a method named `.call` makes an instance amp-invocable — `&$instance(args)` desugars to `$instance.call(args)` at CaspM time, no runtime property lookup), how a class body becomes the class object that appears in an instance's stack, declarations targeting the class itself — `@x = v` sets the class's bucket, `method %self.foo()` attaches a singleton method to the class, `%self.obj.field :x, ...` adds a field to the class-as-instance — with the underlying rule that `%self` is the class inside a class body and any object-op works against it, and the `amend $var ... end` construct that extends an existing class with additional declarations (Ruby-style class reopening; mutation-vs-derived-class semantics still open). Uniqueness constraints and the `join` shorthand are Mikobase concepts and are not part of the Caspian class model.",
 	"status": "draft — DSL surface for the common constructs spec'd; a few areas noted as TBD (helper namespaces, hook-in-class declaration, `implements?` structural check)",
 	"audience": "developers writing Caspian classes; parser implementers; anyone reasoning about class construction"
 }}
@@ -26,23 +26,23 @@ $character = class # character
 
 	# The @-sigil parameters in init auto-assign to the matching field.
 	# No explicit @name = $name lines needed.
-	method init(@name, @rank, @soliloquy: '')
+	method &init(@name, @rank, @soliloquy: '')
 	end
 
-	method greet()
+	method &greet()
 		return @rank + ' ' + @name
 	end
 
-	method recite()
+	method &recite()
 		puts @name + ': ' + @soliloquy
 	end
 
 	# May change to to.string (nested-method-style) in a future revision.
-	method to_string()
+	method &to_string()
 		return @rank + ' ' + @name
 	end
 
-	method on_close()
+	method &on_close()
 		puts @name + ' exits.'
 	end
 end
@@ -65,7 +65,7 @@ Three of those are **engine-invoked** — not called by user code, called by the
 - `to_string` — runs whenever the object needs a string representation (`puts $hamlet`, string concatenation, etc.).
 - `on_close` — runs when the engine destroys the object (deterministic GC hook).
 
-Method definitions can be written with an explicit `&` sigil (`method &greet()` — matching the general callable-value sigil), but examples in this doc omit the `&` for readability. Both forms are legal.
+Method definitions always use the `&` sigil on the method name (`method &greet()`) — same as `function &foo()` and `closure &bar()`. The sigil marks a callable-defining form; consistency across all three callable kinds beats saving one character.
 
 The rest of this doc breaks each piece down.
 
@@ -105,16 +105,16 @@ Inside a class body, certain bare words are recognized as **DSL commands** — c
 
 **No confusion with variables.** Every Caspian variable begins with `$`; no DSL command does. `private` the command and a would-be `$private` variable never look the same at the parse level.
 
-**Chaining transformer commands.** Some commands take the value produced by the DSL expression that follows and return a mutated version. `method foo() ... end` evaluates to a method object; `private` accepts a method object, sets `.private = true`, and returns it. The two chain naturally:
+**Chaining transformer commands.** Some commands take the value produced by the DSL expression that follows and return a mutated version. `method &foo() ... end` evaluates to a method object; `private` accepts a method object, sets `.private = true`, and returns it. The two chain naturally:
 
 ~~~caspian
 class # foo
-	private method bar()
+	private method &bar()
 	end
 end
 ~~~
 
-Reads as: `method bar() ... end` produces a method object; `private` receives that value, mutates it, returns it. Chains of any length compose the same way — see [instance § autorun](../instance#autorun) for `autorun private method foo() ... end`. Commands with fixed-shape argument lists (`field :name, ...`, `inherits Person`, `abstract true`) don't participate in this chain — they take their own args, not a following DSL expression.
+Reads as: `method &bar() ... end` produces a method object; `private` receives that value, mutates it, returns it. Chains of any length compose the same way — see [instance § autorun](../instance#autorun) for `autorun private method &foo() ... end`. Commands with fixed-shape argument lists (`field :name, ...`, `inherits Person`, `abstract true`) don't participate in this chain — they take their own args, not a following DSL expression.
 
 **Scope.** The class-body DSL is active inside `class ... end` and inside `instance ... end` (which inherits the class DSL and adds `autorun`). Outside those bodies, these words are not automatically callable.
 
@@ -186,7 +186,7 @@ class # my_database
 	private_const :internal_id, 'abcd-1234'
 	public_const :path, '/home/miko/shakespeare.db'
 
-	method report()
+	method &report()
 		return @internal_id + ': ' + @path
 	end
 end
@@ -245,11 +245,11 @@ The DSL commands are sugar over these primitives; developers who need non-standa
 
 ~~~caspian
 class # character
-	method greet()
+	method &greet()
 		return 'Hello, ' + @name
 	end
 
-	method record_visit($place)
+	method &record_visit($place)
 		@visits.push($place)
 		return null
 	end
@@ -269,7 +269,7 @@ Parameters follow the general Caspian call convention — positional args, keywo
 
 ~~~caspian
 class # widget
-	method render($mode, $indent: 0, $verbose: false)
+	method &render($mode, $indent: 0, $verbose: false)
 		# ...
 	end
 end
@@ -285,7 +285,7 @@ A handful of method names are called by the engine at specific moments in an ins
 
 | Method | When invoked |
 |---|---|
-| `init` | During `.new()`. Receives the field arguments as kwargs. The `@name`-shaped parameter form auto-assigns each named param to its matching field, so a bare `method init(@name, @rank)` body can be empty. |
+| `init` | During `.new()`. Receives the field arguments as kwargs. The `@name`-shaped parameter form auto-assigns each named param to its matching field, so a bare `method &init(@name, @rank)` body can be empty. |
 | `to_string` | Whenever the instance needs a string representation (`puts $obj`, string concatenation, etc.). Should `return` the string. |
 | `on_close` | When the engine destroys the instance (deterministic GC hook). |
 
@@ -299,11 +299,11 @@ Engine-invoked methods aren't called from user code directly; they fire on their
 
 ~~~caspian
 class # widget
-	method public_op()
+	method &public_op()
 		return %self.helper()
 	end
 
-	private method helper()
+	private method &helper()
 		return @count * 2
 	end
 end
@@ -313,8 +313,8 @@ end
 
 Three equivalent forms — all set the same `.private` property. Use whichever reads best:
 
-- **Bare-word command.** `private method foo() ... end` — the form shown above. Setting the property at the declaration site.
-- **Property assignment on a captured method value.** `$m = method foo() ... end; $m.private = true` — useful when the setting is conditional.
+- **Bare-word command.** `private method &foo() ... end` — the form shown above. Setting the property at the declaration site.
+- **Property assignment on a captured method value.** `$m = method &foo() ... end; $m.private = true` — useful when the setting is conditional.
 - **Getter/setter surface on the method object.** `$m.private` reads the flag; `$m.private = true` writes it. Same as the assignment form above, called out because it's part of the general [method surface](https://puck.uno/requirements/functions/method#method-surface).
 
 **Access is checked at dispatch time via [`%call.method_class`](https://puck.uno/requirements/global-methods/call/#call-method-class).** When code dispatches a method marked `.private = true`, the engine reads the current frame's `%call.method_class` — the class the currently-executing method was defined on. If that class defines the private method being dispatched (or is a subclass that inherits it), the call proceeds. Otherwise, it raises. The check is against the CALLING FRAME, not against the reference in hand — so:
@@ -333,7 +333,7 @@ A class becomes `&`-invocable by defining a method named `.call`. `&$my_instance
 
 ~~~caspian
 $greeter = class # greeter
-	method hello($name)
+	method &hello($name)
 		return 'Hello, ' + $name
 	end
 
@@ -381,7 +381,7 @@ class # animal
 
 	field :name, class: :string
 
-	method speak()
+	method &speak()
 		# subclasses override
 	end
 end
@@ -406,21 +406,23 @@ end
 
 `$widget.bucket[:version]` returns `3`. `$widget.new().bucket[:version]` isn't there — new instances get a fresh bucket, not the class's.
 
-### `method %self.name() ... end` — attach a method to the class
+### Attach a method to the class itself
 
-The singleton-method form — `method $obj.name() ... end` — attaches a method to a specific object. Using `%self` as the receiver in a class body attaches the method to the class itself:
+To install a method on the class OBJECT (callable on the class directly, not inherited by instances), amend the class's shadow. Inside a class body, `%self` refers to the class-being-constructed:
 
 ~~~caspian
 $widget = class
-	method %self.about()
-		return 'widget factory, version ' + @version.to_s
+	amend %self.obj.shadow
+		method &about()
+			return 'widget factory, version ' + @version.to_s
+		end
 	end
 end
 
 $widget.about()   # 'widget factory, version 3'
 ~~~
 
-The method is callable on the class directly; instances don't inherit it via their normal method dispatch (it lives on the class's shadow, not on the class's method table for instances).
+The method is callable on the class directly; instances don't inherit it via their normal method dispatch (it lives on the class's shadow, not on the class's method table for instances). Same amend-body-on-shadow mechanism that installs singleton methods on any other specific object.
 
 ### `%self.obj.field :name, ...` — add a field to the class-as-instance
 
@@ -452,12 +454,12 @@ A class value can be extended after its initial `class ... end` block using the 
 
 ~~~caspian
 $foo = class
-	method bar()
+	method &bar()
 	end
 end
 
 amend $foo
-	method gup()
+	method &gup()
 	end
 end
 ~~~
@@ -514,16 +516,16 @@ Areas the current spec does not settle:
 - **`set: true` alone: no getter** — with `set: true` but not `get:`, reading `$obj.name` raises.
 - **`getset: true` generates both accessors** — with `field :name, getset: true`, both `$obj.name` and `$obj.name = 'x'` work; equivalent to `get: true, set: true`.
 - **Combining `get:` / `set:` / `getset:` raises** — any combination raises at class-body evaluation. Contradictory (`field :name, getset: true, get: false`) and pure-redundancy (`field :name, getset: true, get: true`) cases both raise with a message naming the two flags.
-- **`method` declares callable** — `method greet() return 'hi' end` produces `$obj.greet` returning `'hi'`.
-- **Method sees `%self` as receiver** — `method me() return %self end` returns the receiver.
-- **Method sees `@field`** — `method name() return @name end` reads the bucket.
-- **`method &greet` (with sigil) equivalent to `method greet`** — both forms produce the same class method.
+- **`method` declares callable** — `method &greet() return 'hi' end` produces `$obj.greet` returning `'hi'`.
+- **Method sees `%self` as receiver** — `method &me() return %self end` returns the receiver.
+- **Method sees `@field`** — `method &name() return @name end` reads the bucket.
+- **`method &greet` (with sigil) is the only accepted form** — the `&` sigil is required, matching `function &foo` and `closure &bar`. `method greet()` (no sigil) is a parse error.
 - **`inherits Foo`** — a subclass responds to methods defined on `Foo`.
 - **Multiple inheritance** — `inherits A; inherits B` gives access to methods from both.
 - **Inline inherits list** — `inherits A, B, C` equivalent to three separate `inherits` lines.
 - **`abstract true` blocks direct `.new`** — an abstract class's `.new(...)` raises.
 - **Abstract class subclass instantiable** — a concrete subclass of an abstract class's `.new()` works normally.
-- **`init` runs during `.new`** — `method init(@name) end` called as `.new(name: 'p')` binds `@name = 'p'`.
+- **`init` runs during `.new`** — `method &init(@name) end` called as `.new(name: 'p')` binds `@name = 'p'`.
 - **`init` `@param` auto-assigns** — the `@name` parameter form assigns directly into the bucket with no explicit body.
 - **`init` receives keyword args** — `.new(name: 'p', rank: 'c')` binds both.
 - **`to_string` invoked by `puts`** — `puts $obj` produces whatever `to_string` returns.
@@ -540,7 +542,7 @@ Areas the current spec does not settle:
 - **Class carries no intrinsic name** — the class object has no `.name` property tied to any variable it was assigned to.
 - **`public_const` exposes a getter on instances** — after `class ... public_const :path, '/x' end`, `$c.new().path` is `'/x'`.
 - **`private_const` does NOT expose a getter** — after `class ... private_const :id, 'abc' end`, `$c.new().id` raises with method-missing.
-- **`private_const` is reachable inside class methods via `@name`** — after `class ... private_const :id, 'abc'; method report() return @id end end`, `$c.new().report` is `'abc'`.
+- **`private_const` is reachable inside class methods via `@name`** — after `class ... private_const :id, 'abc'; method &report() return @id end end`, `$c.new().report` is `'abc'`.
 - **Constants are frozen against reassignment inside the class** — after `public_const :path, '/x'`, any `@path = '/y'` from inside a method raises.
 - **Redefining a constant in the class body raises** — `private_const :path, 'a'; private_const :path, 'b'` raises on the second declaration.
 - **Constants are shared across all instances** — two instances of the same class see the same constant value; mutating one does not affect any other (constants are frozen anyway).

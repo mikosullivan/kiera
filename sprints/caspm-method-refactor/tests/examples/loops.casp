@@ -38,8 +38,8 @@ end
 			"blocks": [
 				{
 					"closure": {
-						"body": [],
-						"params": []
+						"params": [],
+						"body": []
 					}
 				}
 			]
@@ -89,8 +89,10 @@ end
 			"blocks": [
 				{
 					"closure": {
-						"body": [],
-						"params": ["i"]
+						"params": [
+							"i"
+						],
+						"body": []
 					}
 				}
 			]
@@ -721,6 +723,9 @@ end
 			"blocks": [
 				{
 					"closure": {
+						"params": [
+							"item"
+						],
 						"body": [
 							[
 								{
@@ -734,9 +739,6 @@ end
 									"line": 2
 								}
 							]
-						],
-						"params": [
-							"item"
 						]
 					}
 				}
@@ -802,7 +804,9 @@ end
 			"blocks": [
 				{
 					"closure": {
-						"as": "loop",
+						"params": [
+							"item"
+						],
 						"body": [
 							[
 								{
@@ -838,9 +842,7 @@ end
 								}
 							]
 						],
-						"params": [
-							"item"
-						]
+						"as": "loop"
 					}
 				}
 			]
@@ -1020,7 +1022,9 @@ end
 			"blocks": [
 				{
 					"closure": {
-						"as": "person_loop",
+						"params": [
+							"person"
+						],
 						"body": [
 							[
 								{
@@ -1041,6 +1045,9 @@ end
 									"blocks": [
 										{
 											"closure": {
+												"params": [
+													"address"
+												],
 												"body": [
 													[
 														"scope",
@@ -1050,6 +1057,7 @@ end
 																{
 																	"body": {
 																		"closure": {
+																			"params": [],
 																			"body": [
 																				[
 																					{
@@ -1063,8 +1071,7 @@ end
 																						"line": 4
 																					}
 																				]
-																			],
-																			"params": []
+																			]
 																		}
 																	},
 																	"condition": [
@@ -1090,9 +1097,6 @@ end
 															"line": 5
 														}
 													]
-												],
-												"params": [
-													"address"
 												]
 											}
 										}
@@ -1100,9 +1104,7 @@ end
 								}
 							]
 						],
-						"params": [
-							"person"
-						]
+						"as": "person_loop"
 					}
 				}
 			]

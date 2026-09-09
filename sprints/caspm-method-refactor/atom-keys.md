@@ -42,6 +42,14 @@ Two args. First: a one-step closure producing the primitive 42. Second: a two-st
 
 **Setvar bare-string exception.** Setvar's first arg is the target variable name — a compile-time constant, not a runtime closure — so it appears as a bare string in `args`, not wrapped as a step-list: `{frame:true, fn:"=", args:["name", [<value-atom>]]}`. The value arg wraps normally. This is the only args-bare-string exception; other compile-time names (function / closure / method definition names, when the source uses the `&name` sugar form) live in a dedicated `name:` sibling field, not in args.
 
+**Def-form structural fields.** `frame.function`, `frame.closure`, and `class.method` (the three callable-defining keyword forms) carry `name:`, `params:`, and `body:` as sibling fields on the dispatch step — not folded into `args:`. Example:
+
+```
+{"class":true, "fn":"method", "name":"hello", "params":{"x":{}, "y":{}}, "body":[...]}
+```
+
+The parser recognizes these three keywords and emits this descriptor-shaped payload directly. Trying to force the descriptors into `args:` step-lists would require lifting compile-time param declarations into runtime step-lists, which they aren't — `$x` in `function &foo($x, $y)` is a param NAME, not a variable lookup, and no amount of step-list wrapping changes that. At runtime the walker still dispatches the step through the normal receiver/`fn` mechanism (frame.function, class.method, etc.); the only asymmetry is in the shape of the payload each step carries. See also "Args are always step-lists" above — def-form steps are the deliberate exception to that rule.
+
 ## `primitive`
 Payload: a JSON scalar literal (string, number, boolean, or nil).
 
@@ -140,3 +148,16 @@ By convention, a command hash's keys are emitted in this order:
 5. Trailing fields (e.g. `line`)
 
 **This is a formatting custom, not a semantic requirement.** Lua tables are unordered hashes; the engine reads command fields by name and doesn't care about key order. The transpiler / normalizer output CaspM in this order so hand-authored fixtures, CaspM dumps, and pretty-printed outputs all follow the same visual layout — easier to compare and diff. Skipping the order (or reordering) doesn't change what the engine does.
+
+## Callable-def key order (CaspJ and CaspM)
+
+For a callable-def object — the inner dict of `{function: {...}}`, `{closure: {...}}`, `{method: {...}}` at CaspJ level and `frame.function` / `frame.closure` / `class.method` steps at CaspM level — inner keys are emitted in signature-reading order:
+
+1. `name`
+2. `params`
+3. `body`
+4. Trailing fields (`receiver`, `meta`, `line`, `as`, iteration-lifecycle clauses like `before` / `between` / `after` / `noloop`, etc.)
+
+Rationale: the source reads `keyword name(params) body end` — top-to-bottom in the fixture matches left-to-right in the source. Same reason the command-hash key order puts the receiver first.
+
+Same formatting-custom caveat as above — the engine doesn't care about key order; the convention is for humans reading fixtures, diffs, and dumped CaspJ / CaspM.
